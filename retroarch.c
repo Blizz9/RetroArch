@@ -140,6 +140,8 @@
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
 
+#include "parasite/parasite.h"
+
 #ifdef HAVE_CHEEVOS
 #include "cheevos-new/cheevos.h"
 #include "cheevos-new/fixup.h"
@@ -27878,6 +27880,8 @@ static bool rarch_write_debug_info(void)
          count = list->size;
          string_list_free(list);
       }
+
+      parasite_test();
 
       filestream_printf(file, "Databases: %u entries\n", count);
    }
