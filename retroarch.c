@@ -2821,7 +2821,10 @@ static enum runloop_state runloop_check_state(
             current_input, RARCH_GAME_FOCUS_TOGGLE);
 
       if (pressed && !old_pressed)
-         command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)0);
+      {
+         RARCH_LOG("##### RECORDING.\n");
+         runloop_msg_queue_push("##### RECORDING.\n", 1, 180, true);
+      }
 
       old_pressed             = pressed;
    }
