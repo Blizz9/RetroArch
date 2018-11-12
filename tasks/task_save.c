@@ -617,6 +617,17 @@ static void task_save_handler(retro_task_t *task)
 
    state->written += written;
 
+   RARCH_LOG("Wrote %d bytes of %d.\n", state->written, state->size);
+
+   if (state->written == state->size)
+   {
+      RARCH_LOG("Full save state written, writing to parasite now.\n");
+      // FILE *file = fopen("./test.state", "wb");
+      FILE *file = fopen("\\\\.\\pipe\\RetroArchParasite", "wb");
+      fwrite((uint8_t*)state->data, 1, (size_t)state->size, file);
+      fclose(file);
+   }
+
    task_set_progress(task, (state->written / (float)state->size) * 100);
 
    if (task_get_cancelled(task) || written != remaining)
