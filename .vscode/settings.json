@@ -1,5 +1,5 @@
 {
-   "terminal.integrated.shell.windows":    "C:\\msys64\\usr\\bin\\bash.exe",
+   "terminal.integrated.shell.windows":    "D:\\Development\\msys64\\usr\\bin\\bash.exe",
    "terminal.integrated.env.windows": {
       "PATH": "/mingw64/lib/ccache/bin:/mingw64/lib/ccache/bin:/mingw64/lib/ccache/bin:/mingw64/bin:/usr/local/bin:/usr/bin:/bin:$PATH",
       "MSYSTEM": "MINGW64",
@@ -70,7 +70,10 @@
       "video_driver.h": "c",
       "system_error": "c",
       "windows.h": "c",
-      "string.h": "c"
+      "string.h": "c",
+      "core.h": "c",
+      "xstring": "c",
+      "ostream": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }

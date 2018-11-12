@@ -15,7 +15,7 @@
          "environment": [],
          "externalConsole": true,
          "MIMode": "gdb",
-         "miDebuggerPath": "c:\\msys64\\mingw64\\bin\\gdb.exe",
+         "miDebuggerPath": "d:\\Development\\msys64\\mingw64\\bin\\gdb.exe",
          "setupCommands": [
              {
                  "description": "Enable pretty-printing for gdb",
@@ -31,7 +31,7 @@
          "program": "${workspaceFolder}/retroarch.exe",
          "processId": "${command:pickProcess}",
          "MIMode": "gdb",
-         "miDebuggerPath": "c:\\msys64\\mingw64\\bin\\gdb.exe",
+         "miDebuggerPath": "d:\\Development\\msys64\\mingw64\\bin\\gdb.exe",
          "setupCommands": [
              {
                  "description": "Enable pretty-printing for gdb",
