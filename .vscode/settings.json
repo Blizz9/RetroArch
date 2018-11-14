@@ -73,7 +73,13 @@
       "string.h": "c",
       "core.h": "c",
       "xstring": "c",
-      "ostream": "c"
+      "ostream": "c",
+      "sstream": "c",
+      "initializer_list": "c",
+      "type_traits": "c",
+      "vector": "c",
+      "xhash": "c",
+      "xtree": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }
