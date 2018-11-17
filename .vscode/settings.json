@@ -79,7 +79,8 @@
       "type_traits": "c",
       "vector": "c",
       "xhash": "c",
-      "xtree": "c"
+      "xtree": "c",
+      "xutility": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }

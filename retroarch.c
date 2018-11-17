@@ -27881,7 +27881,7 @@ static bool rarch_write_debug_info(void)
          string_list_free(list);
       }
 
-      parasite_test();
+      parasiteCheckForMessage();
 
       filestream_printf(file, "Databases: %u entries\n", count);
    }
