@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <windows.h>
 
+#include "../command.h"
 #include "../core.h"
 #include "parasite.h"
 #include "../verbosity.h"
@@ -71,79 +72,21 @@ void parasiteCheckForMessage()
    sendMessage.type = 0x01;
    sendMessage.payloadSize = 0;
    parasiteSendMessage(&sendMessage);
-   RARCH_LOG("[parasite]: sent message %02X|%d\n", sendMessage.type, sendMessage.payloadSize);
+   // RARCH_LOG("[parasite]: sent message %02X|%d\n", sendMessage.type, sendMessage.payloadSize);
 
    struct parasiteMessage *receiveMessage = parasiteReceiveMessage();
    uint32_t receiveMessagePayloadUInt32 = receiveMessage->payload[0] + (receiveMessage->payload[1] << 8) + (receiveMessage->payload[2] << 16) + (receiveMessage->payload[3] << 24);
-   RARCH_LOG("[parasite]: received message: %02X|%d|%d\n", receiveMessage->type, receiveMessage->payloadSize, receiveMessagePayloadUInt32);
-   free(receiveMessage->payload);
+   // RARCH_LOG("[parasite]: received message: %02X|%d|%d\n", receiveMessage->type, receiveMessage->payloadSize, receiveMessagePayloadUInt32);
+
+   if (receiveMessage->type == 0x03)
+   {
+      RARCH_LOG("[parasite]: received command to toggle pause\n");
+      command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
+   }
+
+   if (receiveMessage->payloadSize > 0)
+   {
+      free(receiveMessage->payload);
+   }
    free(receiveMessage);
-}
-
-void parasite_test(void)
-{
-   // retro_ctx_size_info_t sizeInfo;
-   // core_serialize_size(&sizeInfo);
-   // if (sizeInfo.size == 0)
-   //    return;
-
-   // void *data = NULL;
-   // data = malloc(sizeInfo.size);
-   // if (!data)
-   //    return;
-
-   // retro_ctx_serialize_info_t serializeInfo;
-   // serializeInfo.data = data;
-   // serializeInfo.size = sizeInfo.size;
-
-   // if (!core_serialize(&serializeInfo))
-   // {
-   //    free(data);
-   //    return;
-   // }
-
-   // FILE *file = fopen("\\\\.\\pipe\\RetroArchParasite", "wb");
-   // fwrite(data, sizeof(char), sizeInfo.size, file);
-   // fclose(file);
-
-   // free(data);
-
-   if (parasitePipe == NULL)
-   {
-      RARCH_LOG("Parasite pipe is NULL, initializing it.\n");
-      parasitePipe = CreateFile(TEXT("\\\\.\\pipe\\RetroArchParasite"), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-      if (parasitePipe == INVALID_HANDLE_VALUE)
-      {
-         RARCH_LOG("ERROR: Unable to create parasite pipe.\n");
-      }
-   }
-   else
-   {
-      RARCH_LOG("Parasite pipe is already initialized.\n");
-   }
-
-   retro_ctx_size_info_t sizeInfo;
-   core_serialize_size(&sizeInfo);
-
-   uint8_t commandByte[1] = { 0x01 };
-
-   uint8_t sizeBytes[sizeof(sizeInfo.size)];
-   for (int i = 0; i < sizeof(sizeInfo.size); i++)
-      sizeBytes[i] = (sizeInfo.size >> (i * CHAR_BIT));
-
-   int headerSize = sizeof(commandByte) + sizeof(sizeBytes);
-   uint8_t headerBytes[headerSize];
-   memcpy(headerBytes, commandByte, sizeof(commandByte));
-   memcpy(headerBytes + sizeof(commandByte), sizeBytes, sizeof(sizeBytes));
-
-   DWORD writtenByteCount;
-   WriteFile(parasitePipe, &headerBytes, sizeof(headerBytes), &writtenByteCount, NULL);
-   RARCH_LOG("Wrote to parasite pipe.\n");
-
-   char readCommandBuffer[9];
-   DWORD readByteCount;
-   RARCH_LOG("Waiting to receive command reply...");
-   ReadFile(parasitePipe, readCommandBuffer, sizeof(readCommandBuffer), &readByteCount, NULL);
-   RARCH_LOG("command received.\n");
-   RARCH_LOG("%02X\n", readCommandBuffer[0]);
 }

@@ -173,3 +173,8 @@ info/
 Parasite-Server/.vs/
 Parasite-Server/bin/
 Parasite-Server/obj/
+
+# Parasite Driver (C#-WPF)
+ParasiteDriver/.vs/
+ParasiteDriver/bin/
+ParasiteDriver/obj/
