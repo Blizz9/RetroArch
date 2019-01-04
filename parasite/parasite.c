@@ -30,12 +30,14 @@ void parasiteSendMessage(struct parasiteMessage *message)
       payloadSizeBytes[i] = (message->payloadSize >> (i * CHAR_BIT));
 
    int headerSize = sizeof(typeByte) + sizeof(payloadSizeBytes);
-   uint8_t headerBytes[headerSize];
-   memcpy(headerBytes, typeByte, sizeof(typeByte));
-   memcpy(headerBytes + sizeof(typeByte), payloadSizeBytes, sizeof(payloadSizeBytes));
+   uint8_t messageBytes[headerSize + message->payloadSize];
+   memcpy(messageBytes, typeByte, sizeof(typeByte));
+   memcpy(messageBytes + sizeof(typeByte), payloadSizeBytes, sizeof(payloadSizeBytes));
+   if (message->payloadSize > 0)
+      memcpy(messageBytes + headerSize, message->payload, message->payloadSize);
 
    DWORD writtenByteCount;
-   WriteFile(parasitePipe, &headerBytes, sizeof(headerBytes), &writtenByteCount, NULL);
+   WriteFile(parasitePipe, &messageBytes, sizeof(messageBytes), &writtenByteCount, NULL);
    // RARCH_LOG("[parasite]: sent message %02X|%d\n", message->type, message->payloadSize);
 }
 
@@ -68,25 +70,50 @@ void parasiteCheckForMessage()
 {
    parasiteConnectPipe();
 
-   struct parasiteMessage sendMessage;
-   sendMessage.type = 0x01;
-   sendMessage.payloadSize = 0;
-   parasiteSendMessage(&sendMessage);
+   struct parasiteMessage pingMessage;
+   pingMessage.type = PARASITE_PING;
+   pingMessage.payloadSize = 0;
+   parasiteSendMessage(&pingMessage);
    // RARCH_LOG("[parasite]: sent message %02X|%d\n", sendMessage.type, sendMessage.payloadSize);
 
-   struct parasiteMessage *receiveMessage = parasiteReceiveMessage();
-   uint32_t receiveMessagePayloadUInt32 = receiveMessage->payload[0] + (receiveMessage->payload[1] << 8) + (receiveMessage->payload[2] << 16) + (receiveMessage->payload[3] << 24);
+   struct parasiteMessage *receivedMessage = parasiteReceiveMessage();
+   // uint32_t receiveMessagePayloadUInt32 = receiveMessage->payload[0] + (receiveMessage->payload[1] << 8) + (receiveMessage->payload[2] << 16) + (receiveMessage->payload[3] << 24);
    // RARCH_LOG("[parasite]: received message: %02X|%d|%d\n", receiveMessage->type, receiveMessage->payloadSize, receiveMessagePayloadUInt32);
 
-   if (receiveMessage->type == 0x03)
+   if (receivedMessage->type == PARASITE_PAUSE)
    {
-      RARCH_LOG("[parasite]: received command to toggle pause\n");
+      RARCH_LOG("[parasite]: received message to toggle pause\n");
       command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
    }
-
-   if (receiveMessage->payloadSize > 0)
+   else if (receivedMessage->type == PARASITE_REQUEST_STATE)
    {
-      free(receiveMessage->payload);
+      RARCH_LOG("[parasite]: received message to send state\n");
+      
+      // command_event(CMD_EVENT_SAVE_STATE, NULL);
+
+      struct parasiteMessage stateMessage;
+      stateMessage.type = PARASITE_STATE;
+
+      retro_ctx_size_info_t serializeSizeInfo;
+      core_serialize_size(&serializeSizeInfo);
+      retro_ctx_serialize_info_t serializeInfo;
+      void *data = malloc(serializeSizeInfo.size);
+      serializeInfo.data = data;
+      serializeInfo.size = serializeSizeInfo.size;
+      bool serializeSuccessful = core_serialize(&serializeInfo);
+
+      stateMessage.payloadSize = serializeSizeInfo.size;
+      stateMessage.payload = data;
+
+      parasiteSendMessage(&stateMessage);
    }
-   free(receiveMessage);
+   else if (receivedMessage->type == PARASITE_NO_OP)
+   {
+   }
+
+   if (receivedMessage->payloadSize > 0)
+   {
+      free(receivedMessage->payload);
+   }
+   free(receivedMessage);
 }

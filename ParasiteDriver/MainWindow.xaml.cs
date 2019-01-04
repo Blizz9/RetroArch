@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -27,7 +28,13 @@ namespace ParasiteDriver
 
         private IntPtr _windowHandle;
         private HwndSource _windowHandleSource;
+
+        private NamedPipeServerStream _namedPipeServerStream;
+
+        private int _frameCount;
+
         private volatile bool _sendPause;
+        private volatile bool _requestState;
 
         public MainWindow()
         {
@@ -64,7 +71,7 @@ namespace ParasiteDriver
                             int vkey = (((int)lParam >> 16) & 0xFFFF);
                             if (vkey == VK_CAPITAL)
                             {
-                                _sendPause = true;
+                                _requestState = true;
                             }
                             handled = true;
                             break;
@@ -76,56 +83,107 @@ namespace ParasiteDriver
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            runNamedPipeLoop();
+        }
+
+        #region Named Pipe Loop
+
+        private void runNamedPipeLoop()
+        {
             Task.Factory.StartNew(() =>
             {
                 Debug.WriteLine("Parasite started.");
 
-                NamedPipeServerStream namedPipeServerStream = new NamedPipeServerStream("RetroArchParasite", PipeDirection.InOut, 1, PipeTransmissionMode.Byte);
+                _namedPipeServerStream = new NamedPipeServerStream("RetroArchParasite", PipeDirection.InOut, 1, PipeTransmissionMode.Byte);
 
                 Debug.WriteLine("Waiting for other end of pipe to connect...");
-                namedPipeServerStream.WaitForConnection();
+                _namedPipeServerStream.WaitForConnection();
                 Debug.WriteLine("connected.");
 
                 while (true)
                 {
-                    //Debug.Write("Waiting to receive a command...");
+                    waitForMessageType(MessageType.Ping);
+                    _frameCount++;
 
-                    byte[] readCommandBuffer = new byte[9];
-                    int readByteCount = namedPipeServerStream.Read(readCommandBuffer, 0, readCommandBuffer.Length);
+                    Message message = new Message();
 
-                    if (readByteCount > 0)
+                    if (_sendPause)
                     {
-                        //Debug.WriteLine("command received.");
-                        Debug.Write(".");
-
-                        byte command = readCommandBuffer[0];
-                        ulong size = BitConverter.ToUInt64(readCommandBuffer, 1);
-
-                        //Debug.WriteLine(string.Format("Command: [0x{0}][{1}].", command.ToString("X2"), size.ToString()));
-
-                        if (command == 0x01)
-                        {
-                            //Debug.WriteLine("Replying to RetroArch with new command.");
-                            byte[] writeCommandBuffer = new byte[9];
-
-                            if (_sendPause)
-                            {
-                                writeCommandBuffer[0] = 0x03;
-                                _sendPause = false;
-                            }
-                            else
-                            {
-                                writeCommandBuffer[0] = 0x02;
-                            }
-                            Buffer.BlockCopy(BitConverter.GetBytes((ulong)0), 0, writeCommandBuffer, 1, sizeof(ulong));
-                            //Buffer.BlockCopy(BitConverter.GetBytes((ulong)12345), 0, writeCommandBuffer, 1, sizeof(ulong));
-                            namedPipeServerStream.Write(writeCommandBuffer, 0, writeCommandBuffer.Length);
-                        }
+                        _sendPause = false;
+                        message.Type = MessageType.Pause;
+                        sendMessage(message);
+                    }
+                    else if (_requestState)
+                    {
+                        _requestState = false;
+                        message.Type = MessageType.RequestState;
+                        sendMessage(message);
+                        Message stateMessage = receiveMessage();
+                        File.WriteAllBytes("test.state", stateMessage.Payload);
+                    }
+                    else
+                    {
+                        //message.Type = MessageType.Test;
+                        //message.Payload = BitConverter.GetBytes((uint)112233);
+                        message.Type = MessageType.NoOp;
+                        sendMessage(message);
                     }
 
                     Thread.Sleep(1);
                 }
             });
         }
+
+        #endregion
+
+        #region Communication Routines
+
+        private Message receiveMessage()
+        {
+            Message message = new Message();
+
+            byte[] readBuffer = new byte[9];
+            int readByteCount = _namedPipeServerStream.Read(readBuffer, 0, readBuffer.Length);
+
+            if (readByteCount == 0)
+                throw new Exception("Unable to read message properly.");
+
+            message.Type = (MessageType)readBuffer[0];
+            ulong payloadSize = BitConverter.ToUInt64(readBuffer, 1);
+
+            if (payloadSize > 0)
+            {
+                message.Payload = new byte[payloadSize];
+                readByteCount = _namedPipeServerStream.Read(message.Payload, 0, (int)payloadSize);
+
+                if (readByteCount == 0)
+                    throw new Exception("Unable to read message payload properly.");
+            }
+
+            return (message);
+        }
+
+        private void sendMessage(Message message)
+        {
+            byte[] writeBuffer = new byte[9 + message.Payload.Length];
+
+            writeBuffer[0] = (byte)message.Type;
+            Buffer.BlockCopy(BitConverter.GetBytes((ulong)message.Payload.Length), 0, writeBuffer, 1, sizeof(ulong));
+
+            if (message.Payload.Length > 0)
+                Buffer.BlockCopy(message.Payload, 0, writeBuffer, 9, message.Payload.Length);
+
+            _namedPipeServerStream.Write(writeBuffer, 0, writeBuffer.Length);
+        }
+
+        private void waitForMessageType(MessageType messageType)
+        {
+            Message message = receiveMessage();
+
+            if (message.Type != messageType)
+                throw new Exception("Incorrect message type was received.");
+        }
+
+        #endregion
     }
 }
