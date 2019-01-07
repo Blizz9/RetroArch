@@ -3,6 +3,7 @@
 
 #include "../command.h"
 #include "../core.h"
+#include "../gfx/video_driver.h"
 #include "parasite.h"
 #include "../verbosity.h"
 
@@ -88,8 +89,6 @@ void parasiteCheckForMessage()
    else if (receivedMessage->type == PARASITE_REQUEST_STATE)
    {
       RARCH_LOG("[parasite]: received message to send state\n");
-      
-      // command_event(CMD_EVENT_SAVE_STATE, NULL);
 
       struct parasiteMessage stateMessage;
       stateMessage.type = PARASITE_STATE;
@@ -97,17 +96,57 @@ void parasiteCheckForMessage()
       retro_ctx_size_info_t serializeSizeInfo;
       core_serialize_size(&serializeSizeInfo);
       retro_ctx_serialize_info_t serializeInfo;
-      void *data = malloc(serializeSizeInfo.size);
-      serializeInfo.data = data;
+      void *payload = malloc(serializeSizeInfo.size);
+      serializeInfo.data = payload;
       serializeInfo.size = serializeSizeInfo.size;
       bool serializeSuccessful = core_serialize(&serializeInfo);
 
       stateMessage.payloadSize = serializeSizeInfo.size;
-      stateMessage.payload = data;
+      stateMessage.payload = payload;
 
       parasiteSendMessage(&stateMessage);
    }
-   else if (receivedMessage->type == PARASITE_NO_OP)
+   else if (receivedMessage->type == PARASITE_REQUEST_SCREEN)
+   {
+      RARCH_LOG("[parasite]: received message to send screen\n");
+
+      size_t pitch;
+      unsigned width, height;
+      const void *screen = NULL;
+
+      video_driver_cached_frame_get(&screen, &width, &height, &pitch);
+
+      unsigned pixelFormat = video_driver_get_pixel_format();
+      uint8_t pixelFormatBytes[sizeof(pixelFormat)];
+      for (int i = 0; i < sizeof(pixelFormat); i++)
+         pixelFormatBytes[i] = (pixelFormat >> (i * CHAR_BIT));
+      
+      uint8_t widthBytes[sizeof(width)];
+      for (int i = 0; i < sizeof(width); i++)
+         widthBytes[i] = (width >> (i * CHAR_BIT));
+      
+      uint8_t heightBytes[sizeof(height)];
+      for (int i = 0; i < sizeof(height); i++)
+         heightBytes[i] = (height >> (i * CHAR_BIT));
+      
+      uint8_t pitchBytes[sizeof(pitch)];
+      for (int i = 0; i < sizeof(pitch); i++)
+         pitchBytes[i] = (pitch >> (i * CHAR_BIT));
+
+      void *payload = malloc(sizeof(pixelFormat) + sizeof(width) + sizeof(height) + (pitch * height));
+      memcpy(payload, pixelFormatBytes, sizeof(pixelFormat));
+      memcpy(payload + sizeof(pixelFormat), widthBytes, sizeof(width));
+      memcpy(payload + sizeof(pixelFormat) + sizeof(width), heightBytes, sizeof(height));
+      memcpy(payload + sizeof(pixelFormat) + sizeof(width) + sizeof(height), pitchBytes, sizeof(height));
+      memcpy(payload + sizeof(pixelFormat) + sizeof(width) + sizeof(height) + sizeof(pitch), screen, pitch * height);
+
+      struct parasiteMessage screenMessage;
+      screenMessage.type = PARASITE_SCREEN;
+      screenMessage.payloadSize = sizeof(pixelFormat) + sizeof(width) + sizeof(height) + sizeof(pitch) + (pitch * height);
+      screenMessage.payload = payload;
+      parasiteSendMessage(&screenMessage);
+   }
+   else if (receivedMessage->type == PARASITE_PONG)
    {
    }
 

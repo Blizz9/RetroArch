@@ -4,10 +4,12 @@
 enum parasiteMessageType
 {
    PARASITE_PING = 0x01,
-   PARASITE_NO_OP = 0x02,
+   PARASITE_PONG = 0x02,
    PARASITE_PAUSE = 0x03,
    PARASITE_REQUEST_STATE = 0x04,
    PARASITE_STATE = 0x05,
+   PARASITE_REQUEST_SCREEN = 0x06,
+   PARASITE_SCREEN = 0x07,
 };
 
 struct parasiteMessage
