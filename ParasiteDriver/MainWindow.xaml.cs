@@ -120,7 +120,7 @@ namespace ParasiteDriver
                             if (_sendPause)
                             {
                                 _sendPause = false;
-                                message.Type = MessageType.Pause;
+                                message.Type = MessageType.PauseToggle;
                                 sendMessage(message);
                             }
                             else if (_requestState)
@@ -138,10 +138,18 @@ namespace ParasiteDriver
                                 sendMessage(message);
                                 Message screenMessage = receiveMessage();
 
-                                uint raPixelFormat = BitConverter.ToUInt32(screenMessage.Payload, 0);
-                                uint width = BitConverter.ToUInt32(screenMessage.Payload, sizeof(uint));
-                                uint height = BitConverter.ToUInt32(screenMessage.Payload, (sizeof(uint) + sizeof(uint)));
-                                uint pitch = BitConverter.ToUInt32(screenMessage.Payload, (sizeof(uint) + sizeof(uint) + sizeof(uint)));
+                                int i = 0;
+                                uint raPixelFormat = BitConverter.ToUInt32(screenMessage.Payload, i);
+                                i += sizeof(uint);
+                                uint width = BitConverter.ToUInt32(screenMessage.Payload, i);
+                                i += sizeof(uint);
+                                uint height = BitConverter.ToUInt32(screenMessage.Payload, i);
+                                i += sizeof(uint);
+                                uint pitch = BitConverter.ToUInt32(screenMessage.Payload, i);
+                                i += sizeof(uint);
+
+                                byte[] screenPayload = new byte[height * pitch];
+                                Array.Copy(screenMessage.Payload, i, screenPayload, 0, (height * pitch));
 
                                 System.Windows.Media.PixelFormat pixelFormat;
                                 switch ((PixelFormat)raPixelFormat)
@@ -163,17 +171,11 @@ namespace ParasiteDriver
                                         break;
                                 }
 
-                                //byte[] screenPayload = new byte[width * height * pixelMemorySize];
-                                byte[] screenPayload = new byte[height * pitch];
-                                //Array.Copy(screenMessage.Payload, (sizeof(uint) + sizeof(uint) + sizeof(uint)), screenPayload, 0, (width * height * pixelMemorySize));
-                                Array.Copy(screenMessage.Payload, (sizeof(uint) + sizeof(uint) + sizeof(uint) + sizeof(uint)), screenPayload, 0, (height * pitch));
-
                                 if ((PixelFormat)raPixelFormat == PixelFormat.XRGB8888)
                                     // make all alpha bytes 0xFF since they aren't set properly
-                                    for (int i = 3; i < screenPayload.Length; i += 4)
+                                    for (i = 3; i < screenPayload.Length; i += 4)
                                         screenPayload[i] = 0xFF;
 
-                                //BitmapSource screen = BitmapSource.Create((int)width, (int)height, 300, 300, pixelFormat, BitmapPalettes.Gray256, screenPayload, ((int)width * pixelMemorySize));
                                 BitmapSource screen = BitmapSource.Create((int)width, (int)height, 300, 300, pixelFormat, BitmapPalettes.Gray256, screenPayload, (int)pitch);
 
                                 using (FileStream fileStream = new FileStream("test.png", FileMode.Create))
@@ -210,7 +212,7 @@ namespace ParasiteDriver
         {
             Message message = new Message();
 
-            byte[] readBuffer = new byte[9];
+            byte[] readBuffer = new byte[sizeof(byte) + sizeof(ulong)];
             int readByteCount = _namedPipeServerStream.Read(readBuffer, 0, readBuffer.Length);
 
             if (readByteCount == 0)
@@ -219,8 +221,10 @@ namespace ParasiteDriver
                 throw new NamedPipeClosedException("Incorrect message type was received, likely the named pipe was closed from the other end.");
             }
 
-            message.Type = (MessageType)readBuffer[0];
-            ulong payloadSize = BitConverter.ToUInt64(readBuffer, 1);
+            int i = 0;
+            message.Type = (MessageType)readBuffer[i];
+            i += sizeof(byte);
+            ulong payloadSize = BitConverter.ToUInt64(readBuffer, i);
 
             if (payloadSize > 0)
             {

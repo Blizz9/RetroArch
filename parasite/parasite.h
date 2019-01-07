@@ -5,7 +5,7 @@ enum parasiteMessageType
 {
    PARASITE_PING = 0x01,
    PARASITE_PONG = 0x02,
-   PARASITE_PAUSE = 0x03,
+   PARASITE_PAUSE_TOGGLE = 0x03,
    PARASITE_REQUEST_STATE = 0x04,
    PARASITE_STATE = 0x05,
    PARASITE_REQUEST_SCREEN = 0x06,
@@ -33,9 +33,14 @@ void parasitePingDriver();
 void parasiteSendMessage(struct parasiteMessage *message);
 struct parasiteMessage *parasiteReceiveMessage();
 
-int parasitePackBytes(void *buffer, int caret, uint8_t *bytes, size_t sizeOfBytes);
-int parasitePackUint8(void *buffer, int caret, uint8_t value);
-int parasitePackSize(void *buffer, int caret, size_t value);
-int parasitePackUnsigned(void *buffer, int caret, unsigned value);
+void parasiteHandlePong(struct parasiteMessage *message);
+void parasiteHandlePauseToggle(struct parasiteMessage *message);
+void parasiteHandleRequestState(struct parasiteMessage *message);
+void parasiteHandleRequestScreen(struct parasiteMessage *message);
+
+int parasitePackBytes(void *buffer, int index, uint8_t *bytes, size_t sizeOfBytes);
+int parasitePackUint8(void *buffer, int index, uint8_t value);
+int parasitePackSize(void *buffer, int index, size_t value);
+int parasitePackUnsigned(void *buffer, int index, unsigned value);
 
 #endif /* __RARCH_PARASITE_H */

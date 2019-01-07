@@ -36,65 +36,26 @@ void parasitePingDriver()
    // uint32_t receiveMessagePayloadUInt32 = receiveMessage->payload[0] + (receiveMessage->payload[1] << 8) + (receiveMessage->payload[2] << 16) + (receiveMessage->payload[3] << 24);
    // RARCH_LOG("[parasite]: received message: %02X|%d|%d\n", receiveMessage->type, receiveMessage->payloadSize, receiveMessagePayloadUInt32);
 
-   if (receivedMessage->type == PARASITE_PAUSE)
+   switch (receivedMessage->type)
    {
-      RARCH_LOG("[parasite]: received message to toggle pause\n");
-      command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
-   }
-   else if (receivedMessage->type == PARASITE_REQUEST_STATE)
-   {
-      RARCH_LOG("[parasite]: received message to send state\n");
+      case PARASITE_PAUSE_TOGGLE:
+         parasiteHandlePauseToggle(receivedMessage);
+         break;
 
-      struct parasiteMessage stateMessage;
-      stateMessage.type = PARASITE_STATE;
+      case PARASITE_REQUEST_STATE:
+         parasiteHandleRequestState(receivedMessage);
+         break;
 
-      retro_ctx_size_info_t serializeSizeInfo;
-      core_serialize_size(&serializeSizeInfo);
-      retro_ctx_serialize_info_t serializeInfo;
-      void *payload = malloc(serializeSizeInfo.size);
-      serializeInfo.data = payload;
-      serializeInfo.size = serializeSizeInfo.size;
-      bool serializeSuccessful = core_serialize(&serializeInfo);
+      case PARASITE_REQUEST_SCREEN:
+         parasiteHandleRequestScreen(receivedMessage);
+         break;
 
-      stateMessage.payloadSize = serializeSizeInfo.size;
-      stateMessage.payload = payload;
+      case PARASITE_PONG:
+         parasiteHandlePong(receivedMessage);
+         break;
 
-      parasiteSendMessage(&stateMessage);
-   }
-   else if (receivedMessage->type == PARASITE_REQUEST_SCREEN)
-   {
-      RARCH_LOG("[parasite]: received message to send screen\n");
-
-      size_t pitch;
-      unsigned width, height;
-      const void *screen = NULL;
-
-      video_driver_cached_frame_get(&screen, &width, &height, &pitch);
-
-      unsigned pixelFormat = video_driver_get_pixel_format();
-
-      size_t sizeOfPayload = sizeof(pixelFormat) + sizeof(width) + sizeof(height) + sizeof(pitch) + (pitch * height);
-      uint8_t *payload = malloc(sizeOfPayload);
-      
-      int caret = 0;
-      caret = parasitePackUnsigned(payload, caret, pixelFormat);
-      caret = parasitePackUnsigned(payload, caret, width);
-      caret = parasitePackUnsigned(payload, caret, height);
-      caret = parasitePackUnsigned(payload, caret, pitch);
-      caret = parasitePackBytes(payload, caret, (uint8_t *)screen, (pitch * height));
-
-      struct parasiteMessage screenMessage;
-      screenMessage.type = PARASITE_SCREEN;
-      screenMessage.payloadSize = sizeOfPayload;
-      screenMessage.payload = payload;
-      parasiteSendMessage(&screenMessage);
-   }
-   else if (receivedMessage->type == PARASITE_PONG)
-   {
-   }
-   else
-   {
-      parasitePipe = NULL;
+      default:
+         parasitePipe = NULL;
    }
 
    if (receivedMessage->payloadSize > 0)
@@ -109,11 +70,11 @@ void parasiteSendMessage(struct parasiteMessage *message)
    size_t sizeOfMessage = sizeof(message->type) + sizeof(message->payloadSize) + message->payloadSize;
    uint8_t *messageBuffer = malloc(sizeOfMessage);
 
-   int caret = 0;
-   caret = parasitePackUint8(messageBuffer, caret, message->type);
-   caret = parasitePackSize(messageBuffer, caret, message->payloadSize);
+   int i = 0;
+   i = parasitePackUint8(messageBuffer, i, message->type);
+   i = parasitePackSize(messageBuffer, i, message->payloadSize);
    if (message->payloadSize > 0)
-      caret = parasitePackBytes(messageBuffer, caret, message->payload, message->payloadSize);
+      i = parasitePackBytes(messageBuffer, i, message->payload, message->payloadSize);
 
    DWORD writtenByteCount;
    WriteFile(parasitePipe, messageBuffer, sizeOfMessage, &writtenByteCount, NULL);
@@ -122,7 +83,7 @@ void parasiteSendMessage(struct parasiteMessage *message)
 
 struct parasiteMessage *parasiteReceiveMessage()
 {
-   uint8_t messageHeaderBuffer[9];
+   uint8_t messageHeaderBuffer[sizeof(uint8_t) + sizeof(size_t)];
    DWORD readByteCount;
 
    // RARCH_LOG("[parasite]: waiting to receive message header...");
@@ -145,38 +106,98 @@ struct parasiteMessage *parasiteReceiveMessage()
    return (message);
 }
 
-int parasitePackBytes(void *buffer, int caret, uint8_t *bytes, size_t sizeOfBytes)
+void parasiteHandlePong(struct parasiteMessage *message)
 {
-   memcpy(buffer + caret, bytes, sizeOfBytes);
-   return (caret + sizeOfBytes);
 }
 
-int parasitePackUint8(void *buffer, int caret, uint8_t value)
+void parasiteHandlePauseToggle(struct parasiteMessage *message)
+{
+   RARCH_LOG("[parasite]: received message to toggle pause\n");
+   command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
+}
+
+void parasiteHandleRequestState(struct parasiteMessage *message)
+{
+   RARCH_LOG("[parasite]: received message to send state\n");
+   
+   struct parasiteMessage stateMessage;
+   stateMessage.type = PARASITE_STATE;
+   
+   retro_ctx_size_info_t serializeSizeInfo;
+   core_serialize_size(&serializeSizeInfo);
+   retro_ctx_serialize_info_t serializeInfo;
+   void *payload = malloc(serializeSizeInfo.size);
+   serializeInfo.data = payload;
+   serializeInfo.size = serializeSizeInfo.size;
+   bool serializeSuccessful = core_serialize(&serializeInfo);
+   
+   stateMessage.payloadSize = serializeSizeInfo.size;
+   stateMessage.payload = payload;
+
+   parasiteSendMessage(&stateMessage);
+}
+
+void parasiteHandleRequestScreen(struct parasiteMessage *message)
+{
+   RARCH_LOG("[parasite]: received message to send screen\n");
+   
+   size_t pitch;
+   unsigned width, height;
+   const void *screen = NULL;
+   
+   video_driver_cached_frame_get(&screen, &width, &height, &pitch);
+   
+   unsigned pixelFormat = video_driver_get_pixel_format();
+   
+   size_t sizeOfPayload = sizeof(pixelFormat) + sizeof(width) + sizeof(height) + sizeof(pitch) + (pitch * height);
+   uint8_t *payload = malloc(sizeOfPayload);
+   
+   int i = 0;
+   i = parasitePackUnsigned(payload, i, pixelFormat);
+   i = parasitePackUnsigned(payload, i, width);
+   i = parasitePackUnsigned(payload, i, height);
+   i = parasitePackUnsigned(payload, i, pitch);
+   i = parasitePackBytes(payload, i, (uint8_t *)screen, (pitch * height));
+   
+   struct parasiteMessage screenMessage;
+   screenMessage.type = PARASITE_SCREEN;
+   screenMessage.payloadSize = sizeOfPayload;
+   screenMessage.payload = payload;
+   parasiteSendMessage(&screenMessage);
+}
+
+int parasitePackBytes(void *buffer, int index, uint8_t *bytes, size_t sizeOfBytes)
+{
+   memcpy(buffer + index, bytes, sizeOfBytes);
+   return (index + sizeOfBytes);
+}
+
+int parasitePackUint8(void *buffer, int index, uint8_t value)
 {
    uint8_t bytes[1] = { value };
-   memcpy(buffer + caret, bytes, sizeof(uint8_t));
+   memcpy(buffer + index, bytes, sizeof(uint8_t));
 
-   return (caret + sizeof(uint8_t));
+   return (index + sizeof(uint8_t));
 }
 
-int parasitePackSize(void *buffer, int caret, size_t value)
+int parasitePackSize(void *buffer, int index, size_t value)
 {
    uint8_t bytes[sizeof(size_t)];
    for (int i = 0; i < sizeof(size_t); i++)
       bytes[i] = (value >> (i * CHAR_BIT));
 
-   memcpy(buffer + caret, bytes, sizeof(size_t));
+   memcpy(buffer + index, bytes, sizeof(size_t));
 
-   return (caret + sizeof(size_t));
+   return (index + sizeof(size_t));
 }
 
-int parasitePackUnsigned(void *buffer, int caret, unsigned value)
+int parasitePackUnsigned(void *buffer, int index, unsigned value)
 {
    uint8_t bytes[sizeof(unsigned)];
    for (int i = 0; i < sizeof(unsigned); i++)
       bytes[i] = (value >> (i * CHAR_BIT));
 
-   memcpy(buffer + caret, bytes, sizeof(unsigned));
+   memcpy(buffer + index, bytes, sizeof(unsigned));
 
-   return (caret + sizeof(unsigned));
+   return (index + sizeof(unsigned));
 }
