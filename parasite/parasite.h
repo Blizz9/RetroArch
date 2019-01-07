@@ -19,10 +19,23 @@ struct parasiteMessage
    uint8_t *payload;
 };
 
+struct parasiteScreenPayload
+{
+   unsigned pixelFormat;
+   unsigned width;
+   unsigned height;
+   unsigned pitch;
+   const void *screen;
+};
+
 void parasiteConnectPipe();
+void parasitePingDriver();
 void parasiteSendMessage(struct parasiteMessage *message);
 struct parasiteMessage *parasiteReceiveMessage();
-void parasiteCheckForMessage();
-void parasite_test(void);
+
+int parasitePackBytes(void *buffer, int caret, uint8_t *bytes, size_t sizeOfBytes);
+int parasitePackUint8(void *buffer, int caret, uint8_t value);
+int parasitePackSize(void *buffer, int caret, size_t value);
+int parasitePackUnsigned(void *buffer, int caret, unsigned value);
 
 #endif /* __RARCH_PARASITE_H */

@@ -74,8 +74,10 @@ namespace ParasiteDriver
                             int vkey = (((int)lParam >> 16) & 0xFFFF);
                             if (vkey == VK_CAPITAL)
                             {
-                                //_requestScreen = true;
-                                Environment.Exit(0);
+                                //_sendPause = true;
+                                //_requestState = true;
+                                _requestScreen = true;
+                                //Environment.Exit(0);
                             }
                             handled = true;
                             break;

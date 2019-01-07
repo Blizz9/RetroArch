@@ -22,52 +22,7 @@ void parasiteConnectPipe()
    }
 }
 
-void parasiteSendMessage(struct parasiteMessage *message)
-{
-   uint8_t typeByte[1] = { message->type };
-
-   uint8_t payloadSizeBytes[sizeof(size_t)];
-   for (int i = 0; i < sizeof(size_t); i++)
-      payloadSizeBytes[i] = (message->payloadSize >> (i * CHAR_BIT));
-
-   int headerSize = sizeof(typeByte) + sizeof(payloadSizeBytes);
-   uint8_t messageBytes[headerSize + message->payloadSize];
-   memcpy(messageBytes, typeByte, sizeof(typeByte));
-   memcpy(messageBytes + sizeof(typeByte), payloadSizeBytes, sizeof(payloadSizeBytes));
-   if (message->payloadSize > 0)
-      memcpy(messageBytes + headerSize, message->payload, message->payloadSize);
-
-   DWORD writtenByteCount;
-   WriteFile(parasitePipe, &messageBytes, sizeof(messageBytes), &writtenByteCount, NULL);
-   // RARCH_LOG("[parasite]: sent message %02X|%d\n", message->type, message->payloadSize);
-}
-
-struct parasiteMessage *parasiteReceiveMessage()
-{
-   uint8_t messageHeaderBuffer[9];
-   DWORD readByteCount;
-
-   // RARCH_LOG("[parasite]: waiting to receive message header...");
-   ReadFile(parasitePipe, messageHeaderBuffer, sizeof(messageHeaderBuffer), &readByteCount, NULL);
-   size_t messagePayloadSize = messageHeaderBuffer[1] + (messageHeaderBuffer[2] << 8) + (messageHeaderBuffer[3] << 16) + (messageHeaderBuffer[4] << 24) + ((uint64_t)messageHeaderBuffer[5] << 32) + ((uint64_t)messageHeaderBuffer[6] << 40) + ((uint64_t)messageHeaderBuffer[7] << 48) + ((uint64_t)messageHeaderBuffer[8] << 56);
-   // RARCH_LOG("message header received: %02X|%d\n", messageHeaderBuffer[0], messagePayloadSize);
-
-   struct parasiteMessage *message = (struct parasiteMessage *)malloc(sizeof(struct parasiteMessage));
-   message->type = messageHeaderBuffer[0];
-   message->payloadSize = messagePayloadSize;
-
-   if (messagePayloadSize > 0)
-   {
-      message->payload = (uint8_t *)malloc(message->payloadSize * sizeof(uint8_t));
-      // RARCH_LOG("[parasite]: waiting to receive message payload...");
-      ReadFile(parasitePipe, message->payload, sizeof(messagePayloadSize), &readByteCount, NULL);
-      // RARCH_LOG("message payload received\n");
-   }
-
-   return (message);
-}
-
-void parasiteCheckForMessage()
+void parasitePingDriver()
 {
    parasiteConnectPipe();
 
@@ -117,32 +72,20 @@ void parasiteCheckForMessage()
       video_driver_cached_frame_get(&screen, &width, &height, &pitch);
 
       unsigned pixelFormat = video_driver_get_pixel_format();
-      uint8_t pixelFormatBytes[sizeof(pixelFormat)];
-      for (int i = 0; i < sizeof(pixelFormat); i++)
-         pixelFormatBytes[i] = (pixelFormat >> (i * CHAR_BIT));
-      
-      uint8_t widthBytes[sizeof(width)];
-      for (int i = 0; i < sizeof(width); i++)
-         widthBytes[i] = (width >> (i * CHAR_BIT));
-      
-      uint8_t heightBytes[sizeof(height)];
-      for (int i = 0; i < sizeof(height); i++)
-         heightBytes[i] = (height >> (i * CHAR_BIT));
-      
-      uint8_t pitchBytes[sizeof(pitch)];
-      for (int i = 0; i < sizeof(pitch); i++)
-         pitchBytes[i] = (pitch >> (i * CHAR_BIT));
 
-      void *payload = malloc(sizeof(pixelFormat) + sizeof(width) + sizeof(height) + (pitch * height));
-      memcpy(payload, pixelFormatBytes, sizeof(pixelFormat));
-      memcpy(payload + sizeof(pixelFormat), widthBytes, sizeof(width));
-      memcpy(payload + sizeof(pixelFormat) + sizeof(width), heightBytes, sizeof(height));
-      memcpy(payload + sizeof(pixelFormat) + sizeof(width) + sizeof(height), pitchBytes, sizeof(height));
-      memcpy(payload + sizeof(pixelFormat) + sizeof(width) + sizeof(height) + sizeof(pitch), screen, pitch * height);
+      size_t sizeOfPayload = sizeof(pixelFormat) + sizeof(width) + sizeof(height) + sizeof(pitch) + (pitch * height);
+      uint8_t *payload = malloc(sizeOfPayload);
+      
+      int caret = 0;
+      caret = parasitePackUnsigned(payload, caret, pixelFormat);
+      caret = parasitePackUnsigned(payload, caret, width);
+      caret = parasitePackUnsigned(payload, caret, height);
+      caret = parasitePackUnsigned(payload, caret, pitch);
+      caret = parasitePackBytes(payload, caret, (uint8_t *)screen, (pitch * height));
 
       struct parasiteMessage screenMessage;
       screenMessage.type = PARASITE_SCREEN;
-      screenMessage.payloadSize = sizeof(pixelFormat) + sizeof(width) + sizeof(height) + sizeof(pitch) + (pitch * height);
+      screenMessage.payloadSize = sizeOfPayload;
       screenMessage.payload = payload;
       parasiteSendMessage(&screenMessage);
    }
@@ -159,4 +102,81 @@ void parasiteCheckForMessage()
       free(receivedMessage->payload);
    }
    free(receivedMessage);
+}
+
+void parasiteSendMessage(struct parasiteMessage *message)
+{
+   size_t sizeOfMessage = sizeof(message->type) + sizeof(message->payloadSize) + message->payloadSize;
+   uint8_t *messageBuffer = malloc(sizeOfMessage);
+
+   int caret = 0;
+   caret = parasitePackUint8(messageBuffer, caret, message->type);
+   caret = parasitePackSize(messageBuffer, caret, message->payloadSize);
+   if (message->payloadSize > 0)
+      caret = parasitePackBytes(messageBuffer, caret, message->payload, message->payloadSize);
+
+   DWORD writtenByteCount;
+   WriteFile(parasitePipe, messageBuffer, sizeOfMessage, &writtenByteCount, NULL);
+   // RARCH_LOG("[parasite]: sent message %02X|%d\n", message->type, message->payloadSize);
+}
+
+struct parasiteMessage *parasiteReceiveMessage()
+{
+   uint8_t messageHeaderBuffer[9];
+   DWORD readByteCount;
+
+   // RARCH_LOG("[parasite]: waiting to receive message header...");
+   ReadFile(parasitePipe, messageHeaderBuffer, sizeof(messageHeaderBuffer), &readByteCount, NULL);
+   size_t messagePayloadSize = messageHeaderBuffer[1] + (messageHeaderBuffer[2] << 8) + (messageHeaderBuffer[3] << 16) + (messageHeaderBuffer[4] << 24) + ((uint64_t)messageHeaderBuffer[5] << 32) + ((uint64_t)messageHeaderBuffer[6] << 40) + ((uint64_t)messageHeaderBuffer[7] << 48) + ((uint64_t)messageHeaderBuffer[8] << 56);
+   // RARCH_LOG("message header received: %02X|%d\n", messageHeaderBuffer[0], messagePayloadSize);
+
+   struct parasiteMessage *message = (struct parasiteMessage *)malloc(sizeof(struct parasiteMessage));
+   message->type = messageHeaderBuffer[0];
+   message->payloadSize = messagePayloadSize;
+
+   if (messagePayloadSize > 0)
+   {
+      message->payload = (uint8_t *)malloc(message->payloadSize * sizeof(uint8_t));
+      // RARCH_LOG("[parasite]: waiting to receive message payload...");
+      ReadFile(parasitePipe, message->payload, sizeof(messagePayloadSize), &readByteCount, NULL);
+      // RARCH_LOG("message payload received\n");
+   }
+
+   return (message);
+}
+
+int parasitePackBytes(void *buffer, int caret, uint8_t *bytes, size_t sizeOfBytes)
+{
+   memcpy(buffer + caret, bytes, sizeOfBytes);
+   return (caret + sizeOfBytes);
+}
+
+int parasitePackUint8(void *buffer, int caret, uint8_t value)
+{
+   uint8_t bytes[1] = { value };
+   memcpy(buffer + caret, bytes, sizeof(uint8_t));
+
+   return (caret + sizeof(uint8_t));
+}
+
+int parasitePackSize(void *buffer, int caret, size_t value)
+{
+   uint8_t bytes[sizeof(size_t)];
+   for (int i = 0; i < sizeof(size_t); i++)
+      bytes[i] = (value >> (i * CHAR_BIT));
+
+   memcpy(buffer + caret, bytes, sizeof(size_t));
+
+   return (caret + sizeof(size_t));
+}
+
+int parasitePackUnsigned(void *buffer, int caret, unsigned value)
+{
+   uint8_t bytes[sizeof(unsigned)];
+   for (int i = 0; i < sizeof(unsigned); i++)
+      bytes[i] = (value >> (i * CHAR_BIT));
+
+   memcpy(buffer + caret, bytes, sizeof(unsigned));
+
+   return (caret + sizeof(unsigned));
 }
