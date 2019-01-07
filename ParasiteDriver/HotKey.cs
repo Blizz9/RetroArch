@@ -21,6 +21,7 @@ namespace ParasiteDriver
         private const uint MOD_SHIFT = 0x04;
         private const uint MOD_WIN = 0x08;
         private const uint VK_CAPITAL = 0x14;
+        private const uint VK_OEM_PERIOD = 0xBE;
 
         private IntPtr _windowHandle;
         private HwndSource _windowHandleSource;
@@ -32,7 +33,7 @@ namespace ParasiteDriver
             _windowHandle = new WindowInteropHelper(window).Handle;
             _windowHandleSource = HwndSource.FromHwnd(_windowHandle);
             _windowHandleSource.AddHook(hotKeyHookHandler);
-            RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_NONE, VK_CAPITAL);
+            RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_ALT | MOD_CONTROL, VK_OEM_PERIOD);
         }
 
         public void Cleanup()
@@ -48,7 +49,7 @@ namespace ParasiteDriver
                 if (wParam.ToInt32() == HOTKEY_ID)
                 {
                     int vkey = (((int)lParam >> 16) & 0xFFFF);
-                    if (vkey == VK_CAPITAL)
+                    if (vkey == VK_OEM_PERIOD)
                     {
                         Pressed?.Invoke();
                     }
