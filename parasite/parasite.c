@@ -149,6 +149,10 @@ void parasiteCheckForMessage()
    else if (receivedMessage->type == PARASITE_PONG)
    {
    }
+   else
+   {
+      parasitePipe = NULL;
+   }
 
    if (receivedMessage->payloadSize > 0)
    {

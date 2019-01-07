@@ -74,7 +74,8 @@ namespace ParasiteDriver
                             int vkey = (((int)lParam >> 16) & 0xFFFF);
                             if (vkey == VK_CAPITAL)
                             {
-                                _requestScreen = true;
+                                //_requestScreen = true;
+                                Environment.Exit(0);
                             }
                             handled = true;
                             break;
@@ -97,94 +98,104 @@ namespace ParasiteDriver
             {
                 Debug.WriteLine("Parasite started.");
 
-                _namedPipeServerStream = new NamedPipeServerStream("RetroArchParasite", PipeDirection.InOut, 1, PipeTransmissionMode.Byte);
-
-                Debug.WriteLine("Waiting for other end of pipe to connect...");
-                _namedPipeServerStream.WaitForConnection();
-                Debug.WriteLine("connected.");
-
                 while (true)
                 {
-                    waitForMessageType(MessageType.Ping);
-                    _frameCount++;
+                    _namedPipeServerStream = new NamedPipeServerStream("RetroArchParasite", PipeDirection.InOut, 1, PipeTransmissionMode.Byte);
 
-                    Message message = new Message();
+                    Debug.WriteLine("Waiting for other end of pipe to connect...");
+                    _namedPipeServerStream.WaitForConnection();
+                    Debug.WriteLine("connected.");
 
-                    if (_sendPause)
+                    while (true)
                     {
-                        _sendPause = false;
-                        message.Type = MessageType.Pause;
-                        sendMessage(message);
-                    }
-                    else if (_requestState)
-                    {
-                        _requestState = false;
-                        message.Type = MessageType.RequestState;
-                        sendMessage(message);
-                        Message stateMessage = receiveMessage();
-                        File.WriteAllBytes("test.state", stateMessage.Payload);
-                    }
-                    else if (_requestScreen)
-                    {
-                        _requestScreen = false;
-                        message.Type = MessageType.RequestScreen;
-                        sendMessage(message);
-                        Message screenMessage = receiveMessage();
-
-                        uint raPixelFormat = BitConverter.ToUInt32(screenMessage.Payload, 0);
-                        uint width = BitConverter.ToUInt32(screenMessage.Payload, sizeof(uint));
-                        uint height = BitConverter.ToUInt32(screenMessage.Payload, (sizeof(uint) + sizeof(uint)));
-                        uint pitch = BitConverter.ToUInt32(screenMessage.Payload, (sizeof(uint) + sizeof(uint) + sizeof(uint)));
-
-                        System.Windows.Media.PixelFormat pixelFormat;
-                        switch ((PixelFormat)raPixelFormat)
+                        try
                         {
-                            case PixelFormat.RGB1555:
-                                pixelFormat = PixelFormats.Bgr555;
-                                break;
+                            waitForMessageType(MessageType.Ping);
+                            _frameCount++;
 
-                            case PixelFormat.RGB565:
-                                pixelFormat = PixelFormats.Bgr565;
-                                break;
+                            Message message = new Message();
 
-                            case PixelFormat.XRGB8888:
-                                pixelFormat = PixelFormats.Bgra32;
-                                break;
+                            if (_sendPause)
+                            {
+                                _sendPause = false;
+                                message.Type = MessageType.Pause;
+                                sendMessage(message);
+                            }
+                            else if (_requestState)
+                            {
+                                _requestState = false;
+                                message.Type = MessageType.RequestState;
+                                sendMessage(message);
+                                Message stateMessage = receiveMessage();
+                                File.WriteAllBytes("test.state", stateMessage.Payload);
+                            }
+                            else if (_requestScreen)
+                            {
+                                _requestScreen = false;
+                                message.Type = MessageType.RequestScreen;
+                                sendMessage(message);
+                                Message screenMessage = receiveMessage();
 
-                            default:
-                                pixelFormat = PixelFormats.Bgra32;
-                                break;
+                                uint raPixelFormat = BitConverter.ToUInt32(screenMessage.Payload, 0);
+                                uint width = BitConverter.ToUInt32(screenMessage.Payload, sizeof(uint));
+                                uint height = BitConverter.ToUInt32(screenMessage.Payload, (sizeof(uint) + sizeof(uint)));
+                                uint pitch = BitConverter.ToUInt32(screenMessage.Payload, (sizeof(uint) + sizeof(uint) + sizeof(uint)));
+
+                                System.Windows.Media.PixelFormat pixelFormat;
+                                switch ((PixelFormat)raPixelFormat)
+                                {
+                                    case PixelFormat.RGB1555:
+                                        pixelFormat = PixelFormats.Bgr555;
+                                        break;
+
+                                    case PixelFormat.RGB565:
+                                        pixelFormat = PixelFormats.Bgr565;
+                                        break;
+
+                                    case PixelFormat.XRGB8888:
+                                        pixelFormat = PixelFormats.Bgra32;
+                                        break;
+
+                                    default:
+                                        pixelFormat = PixelFormats.Bgra32;
+                                        break;
+                                }
+
+                                //byte[] screenPayload = new byte[width * height * pixelMemorySize];
+                                byte[] screenPayload = new byte[height * pitch];
+                                //Array.Copy(screenMessage.Payload, (sizeof(uint) + sizeof(uint) + sizeof(uint)), screenPayload, 0, (width * height * pixelMemorySize));
+                                Array.Copy(screenMessage.Payload, (sizeof(uint) + sizeof(uint) + sizeof(uint) + sizeof(uint)), screenPayload, 0, (height * pitch));
+
+                                if ((PixelFormat)raPixelFormat == PixelFormat.XRGB8888)
+                                    // make all alpha bytes 0xFF since they aren't set properly
+                                    for (int i = 3; i < screenPayload.Length; i += 4)
+                                        screenPayload[i] = 0xFF;
+
+                                //BitmapSource screen = BitmapSource.Create((int)width, (int)height, 300, 300, pixelFormat, BitmapPalettes.Gray256, screenPayload, ((int)width * pixelMemorySize));
+                                BitmapSource screen = BitmapSource.Create((int)width, (int)height, 300, 300, pixelFormat, BitmapPalettes.Gray256, screenPayload, (int)pitch);
+
+                                using (FileStream fileStream = new FileStream("test.png", FileMode.Create))
+                                {
+                                    BitmapEncoder encoder = new PngBitmapEncoder();
+                                    encoder.Frames.Add(BitmapFrame.Create(screen));
+                                    encoder.Save(fileStream);
+                                }
+                            }
+                            else
+                            {
+                                //message.Type = MessageType.Test;
+                                //message.Payload = BitConverter.GetBytes((uint)112233);
+                                message.Type = MessageType.Pong;
+                                sendMessage(message);
+                            }
+
+                            Thread.Sleep(1);
                         }
-
-                        //byte[] screenPayload = new byte[width * height * pixelMemorySize];
-                        byte[] screenPayload = new byte[height * pitch];
-                        //Array.Copy(screenMessage.Payload, (sizeof(uint) + sizeof(uint) + sizeof(uint)), screenPayload, 0, (width * height * pixelMemorySize));
-                        Array.Copy(screenMessage.Payload, (sizeof(uint) + sizeof(uint) + sizeof(uint) + sizeof(uint)), screenPayload, 0, (height * pitch));
-
-                        if ((PixelFormat)raPixelFormat == PixelFormat.XRGB8888)
-                            // make all alpha bytes 0xFF since they aren't set properly
-                            for (int i = 3; i < screenPayload.Length; i += 4)
-                                screenPayload[i] = 0xFF;
-
-                        //BitmapSource screen = BitmapSource.Create((int)width, (int)height, 300, 300, pixelFormat, BitmapPalettes.Gray256, screenPayload, ((int)width * pixelMemorySize));
-                        BitmapSource screen = BitmapSource.Create((int)width, (int)height, 300, 300, pixelFormat, BitmapPalettes.Gray256, screenPayload, (int)pitch);
-
-                        using (FileStream fileStream = new FileStream("test.png", FileMode.Create))
+                        catch (NamedPipeClosedException)
                         {
-                            BitmapEncoder encoder = new PngBitmapEncoder();
-                            encoder.Frames.Add(BitmapFrame.Create(screen));
-                            encoder.Save(fileStream);
+                            break;
                         }
                     }
-                    else
-                    {
-                        //message.Type = MessageType.Test;
-                        //message.Payload = BitConverter.GetBytes((uint)112233);
-                        message.Type = MessageType.Pong;
-                        sendMessage(message);
-                    }
-
-                    Thread.Sleep(1);
                 }
             });
         }
@@ -201,7 +212,10 @@ namespace ParasiteDriver
             int readByteCount = _namedPipeServerStream.Read(readBuffer, 0, readBuffer.Length);
 
             if (readByteCount == 0)
-                throw new Exception("Unable to read message properly.");
+            {
+                _namedPipeServerStream.Close();
+                throw new NamedPipeClosedException("Incorrect message type was received, likely the named pipe was closed from the other end.");
+            }
 
             message.Type = (MessageType)readBuffer[0];
             ulong payloadSize = BitConverter.ToUInt64(readBuffer, 1);
