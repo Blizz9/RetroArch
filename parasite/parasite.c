@@ -22,16 +22,30 @@ void parasiteConnectPipe()
    }
 }
 
-void parasitePingDriver()
+void parasitePingDriver(uint64_t frameCount)
 {
    parasiteConnectPipe();
 
    struct parasiteMessage pingMessage;
    pingMessage.type = PARASITE_PING;
-   pingMessage.payloadSize = 0;
-   parasiteSendMessage(&pingMessage);
-   struct parasiteMessage *receivedMessage = parasiteReceiveMessage();
 
+   retro_ctx_size_info_t serializeSizeInfo;
+   core_serialize_size(&serializeSizeInfo);
+
+   pingMessage.payloadSize = sizeof(frameCount) + serializeSizeInfo.size;
+   pingMessage.payload = malloc(pingMessage.payloadSize);
+
+   int i = 0;
+   i = parasitePackUint64(pingMessage.payload, i, frameCount);
+
+   retro_ctx_serialize_info_t serializeInfo;
+   serializeInfo.data = pingMessage.payload + i;
+   serializeInfo.size = serializeSizeInfo.size;
+   bool serializeSuccessful = core_serialize(&serializeInfo);
+
+   parasiteSendMessage(&pingMessage);
+
+   struct parasiteMessage *receivedMessage = parasiteReceiveMessage();
    switch (receivedMessage->type)
    {
       case PARASITE_PAUSE_TOGGLE:
@@ -109,7 +123,7 @@ void parasiteHandlePauseToggle(struct parasiteMessage *message)
 
 void parasiteHandleRequestState(struct parasiteMessage *message)
 {
-   RARCH_LOG("[parasite]: received message to send state\n");
+   // RARCH_LOG("[parasite]: received message to send state\n");
    
    struct parasiteMessage stateMessage;
    stateMessage.type = PARASITE_STATE;
@@ -130,7 +144,7 @@ void parasiteHandleRequestState(struct parasiteMessage *message)
 
 void parasiteHandleRequestScreen(struct parasiteMessage *message)
 {
-   RARCH_LOG("[parasite]: received message to send screen\n");
+   // RARCH_LOG("[parasite]: received message to send screen\n");
    
    size_t pitch;
    unsigned width, height;
@@ -168,6 +182,17 @@ int parasitePackUint8(void *buffer, int index, uint8_t value)
    memcpy(buffer + index, bytes, sizeof(uint8_t));
    
    return (index + sizeof(uint8_t));
+}
+
+int parasitePackUint64(void *buffer, int index, uint64_t value)
+{
+   uint8_t bytes[sizeof(uint64_t)];
+   for (int i = 0; i < sizeof(uint64_t); i++)
+      bytes[i] = (value >> (i * CHAR_BIT));
+
+   memcpy(buffer + index, bytes, sizeof(uint64_t));
+
+   return (index + sizeof(uint64_t));
 }
 
 int parasitePackSize(void *buffer, int index, size_t value)

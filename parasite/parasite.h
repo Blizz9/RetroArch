@@ -29,7 +29,7 @@ struct parasiteScreenPayload
 };
 
 void parasiteConnectPipe();
-void parasitePingDriver();
+void parasitePingDriver(uint64_t frameCount);
 void parasiteSendMessage(struct parasiteMessage *message);
 struct parasiteMessage *parasiteReceiveMessage();
 
@@ -40,6 +40,7 @@ void parasiteHandleRequestScreen(struct parasiteMessage *message);
 
 int parasitePackBytes(void *buffer, int index, uint8_t *bytes, size_t sizeOfBytes);
 int parasitePackUint8(void *buffer, int index, uint8_t value);
+int parasitePackUint64(void *buffer, int index, uint64_t value);
 int parasitePackSize(void *buffer, int index, size_t value);
 int parasitePackUnsigned(void *buffer, int index, unsigned value);
 

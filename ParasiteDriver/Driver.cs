@@ -12,6 +12,8 @@ namespace ParasiteDriver
     {
         NamedPipeServerStream _namedPipeServerStream;
 
+        private byte _lastFrameLives;
+
         public volatile bool PauseToggle;
         public volatile bool RequestState;
         public volatile bool RequestScreen;
@@ -37,7 +39,18 @@ namespace ParasiteDriver
                 {
                     try
                     {
-                        waitForMessageType(MessageType.Ping);
+                        Message pingMessage = waitForMessageType(MessageType.Ping);
+
+                        int i = 0;
+                        ulong frameCount = BitConverter.ToUInt64(pingMessage.Payload, i);
+                        i += sizeof(ulong);
+
+                        byte[] state = new byte[pingMessage.Payload.Length - i];
+                        Array.Copy(pingMessage.Payload, i, state, 0, (pingMessage.Payload.Length - i));
+
+                        //if ((state[0x0772 + 0x5D] == 0) && ((_lastFrameLives - 1) == state[0x075A + 0x5D]))
+                        //    File.WriteAllBytes("test.state", state);
+                        //_lastFrameLives = state[0x075A + 0x5D];
 
                         if (PauseToggle)
                         {
@@ -90,6 +103,7 @@ namespace ParasiteDriver
             sendMessage(message);
 
             Message stateMessage = receiveMessage();
+
             File.WriteAllBytes("test.state", stateMessage.Payload);
         }
 
@@ -196,12 +210,14 @@ namespace ParasiteDriver
             _namedPipeServerStream.Write(writeBuffer, 0, writeBuffer.Length);
         }
 
-        private void waitForMessageType(MessageType messageType)
+        private Message waitForMessageType(MessageType messageType)
         {
             Message message = receiveMessage();
 
             if (message.Type != messageType)
                 throw new Exception("Incorrect message type was received.");
+
+            return (message);
         }
 
         #endregion
