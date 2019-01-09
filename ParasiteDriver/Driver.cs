@@ -12,7 +12,7 @@ namespace ParasiteDriver
     {
         NamedPipeServerStream _namedPipeServerStream;
 
-        private byte _lastFrameLives;
+        public event Action<int, byte[]> Clock;
 
         public volatile bool PauseToggle;
         public volatile bool RequestState;
@@ -48,9 +48,7 @@ namespace ParasiteDriver
                         byte[] state = new byte[pingMessage.Payload.Length - i];
                         Array.Copy(pingMessage.Payload, i, state, 0, (pingMessage.Payload.Length - i));
 
-                        //if ((state[0x0772 + 0x5D] == 0) && ((_lastFrameLives - 1) == state[0x075A + 0x5D]))
-                        //    File.WriteAllBytes("test.state", state);
-                        //_lastFrameLives = state[0x075A + 0x5D];
+                        Task.Factory.StartNew(() => Clock?.Invoke((int)frameCount, state));
 
                         if (PauseToggle)
                         {

@@ -8,6 +8,8 @@ namespace ParasiteDriver
         private Driver _driver;
         private HotKey _hotKey;
 
+        private SMB _smb;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -31,6 +33,7 @@ namespace ParasiteDriver
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             _driver = new Driver();
+            _smb = new SMB(_driver);
         }
 
         private void hotKeyPressed()
