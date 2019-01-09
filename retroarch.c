@@ -27878,11 +27878,15 @@ static bool rarch_write_debug_info(void)
       if (list)
       {
 <<<<<<< HEAD
+<<<<<<< HEAD
          count = list->size;
          string_list_free(list);
 =======
          parasitePingDriver();
 >>>>>>> Added byte packing functions to make serializing easier.
+=======
+         parasitePingDriver(frame_count);
+>>>>>>> A lot of work getting ra to run within the window.
       }
 
       parasiteCheckForMessage();
@@ -27912,7 +27916,7 @@ static bool rarch_write_debug_info(void)
    filestream_printf(file, "      - CRT SwitchRes: %s\n", (settings->uints.crt_switch_resolution > CRT_SWITCH_NONE) ? "yes" : "no");
    filestream_printf(file, "      - Video Shared Context: %s\n", settings->bools.video_shared_context ? "yes" : "no");
 
-   parasitePingDriver();
+   parasitePingDriver(frame_count);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    /* Check recording toggle */

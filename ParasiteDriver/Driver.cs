@@ -12,6 +12,7 @@ namespace ParasiteDriver
     {
         NamedPipeServerStream _namedPipeServerStream;
 
+        public event Action Connected;
         public event Action<int, byte[]> Clock;
 
         public volatile bool PauseToggle;
@@ -34,6 +35,8 @@ namespace ParasiteDriver
                 Debug.WriteLine("Waiting for other end of pipe to connect...");
                 _namedPipeServerStream.WaitForConnection();
                 Debug.WriteLine("connected.");
+
+                Connected?.Invoke();
 
                 while (true)
                 {

@@ -4,8 +4,19 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800" Loaded="Window_Loaded">
-    <Grid>
-        <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\Debug\1-1.png" Stretch="None" /> 
-    </Grid>
+        Title="MainWindow" ResizeMode="NoResize" SizeToContent="WidthAndHeight" Loaded="Window_Loaded" MouseUp="Window_MouseUp">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Margin="0,10,10,10" Width="128">
+            <StackPanel.Resources>
+                <Style TargetType="{x:Type Image}">
+                    <Setter Property="Margin" Value="0,0,0,5"/>
+                </Style>
+            </StackPanel.Resources>
+            <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\Debug\1-1.png" />
+            <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\Debug\1-1 (checkpoint).png" />
+            <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\Debug\1-2.png" />
+        </StackPanel>
+        <Border Name="logPanel" DockPanel.Dock="Bottom" Margin="10,0,10,10" VerticalAlignment="Bottom" Height="200" />
+        <Border Name="mainPanel" Margin="10,10,10,10" Height="672" Width="879" />
+    </DockPanel>
 </Window>
