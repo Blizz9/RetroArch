@@ -7,7 +7,8 @@ namespace ParasiteDriver
 {
     public class SMB
     {
-        private const byte RAM_OFFSET = 0x5D;
+        //private const byte RAM_OFFSET = 0x5D; // FCEUmm
+        private const byte RAM_OFFSET = 0x38; // Nestopia
         private const short RAM_LENGTH = 0x0800;
         private const short MOVING_DIRECTION = 0x0045;
         private const short CURRENT_SCREEN = 0x071A;
