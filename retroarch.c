@@ -2438,6 +2438,16 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
    menu_input_dialog_keyboard_buffer =
       input_keyboard_start_line(menu, line->cb);
+   command_event(CMD_PARASITE_INIT, NULL);
+   command_event(CMD_EVENT_CHEATS_INIT, NULL);
+   drivers_init(DRIVERS_CMD_ALL);
+   command_event(CMD_EVENT_COMMAND_INIT, NULL);
+   command_event(CMD_EVENT_REMOTE_INIT, NULL);
+   command_event(CMD_EVENT_MAPPER_INIT, NULL);
+   command_event(CMD_EVENT_REWIND_INIT, NULL);
+   command_event(CMD_EVENT_CONTROLLERS_INIT, NULL);
+   if (!string_is_empty(global->record.path))
+      command_event(CMD_EVENT_RECORD_INIT, NULL);
 
    return true;
 }
@@ -24934,6 +24944,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
    cheat_manager_state_free();
    command_event_init_cheats();
+   command_event_init_parasite();
    drivers_init(DRIVERS_CMD_ALL);
    input_driver_deinit_command();
    input_driver_init_command();
@@ -27586,6 +27597,9 @@ static bool rarch_write_debug_info(void)
       goto error;
    }
 
+   // this is always hit
+   parasiteClock(frame_count);
+
 #ifdef HAVE_MENU
    {
       time_t time_;
@@ -27832,6 +27846,7 @@ static bool rarch_write_debug_info(void)
          filestream_printf(file, "  - Joypad: %s (configured for %s)\n", !string_is_empty(joypad_driver->ident) ? joypad_driver->ident : "n/a", !string_is_empty(settings->arrays.input_joypad_driver) ? settings->arrays.input_joypad_driver : "n/a");
    }
 
+<<<<<<< HEAD
    filestream_printf(file, "\n");
 
    filestream_printf(file, "Configuration related settings:\n");
@@ -27845,6 +27860,14 @@ static bool rarch_write_debug_info(void)
    filestream_printf(file, "  - Write savestates in content dir: %s\n", settings->bools.savestates_in_content_dir ? "yes" : "no");
 
    filestream_printf(file, "\n");
+=======
+   // this is hit when the app is focused or a game is loaded
+
+   if (menu_driver_is_alive())
+   {
+      if (!settings->bools.menu_throttle_framerate && !settings->floats.fastforward_ratio)
+         return RUNLOOP_STATE_MENU_ITERATE;
+>>>>>>> Added initial support for ParasiteLib
 
    filestream_printf(file, "Auto load state: %s\n", settings->bools.savestate_auto_load ? "yes (WARNING: not compatible with all cores)" : "no");
    filestream_printf(file, "Auto save state: %s\n", settings->bools.savestate_auto_save ? "yes" : "no");
@@ -27879,6 +27902,7 @@ static bool rarch_write_debug_info(void)
       {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
          count = list->size;
          string_list_free(list);
 =======
@@ -27887,6 +27911,15 @@ static bool rarch_write_debug_info(void)
 =======
          parasitePingDriver(frame_count);
 >>>>>>> A lot of work getting ra to run within the window.
+=======
+         if (input_keyboard_ctl(
+                  RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
+            input_keyboard_ctl(
+                  RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED, NULL);
+         else
+            input_keyboard_ctl(
+                  RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
+>>>>>>> Added initial support for ParasiteLib
       }
 
       parasiteCheckForMessage();
@@ -27894,6 +27927,7 @@ static bool rarch_write_debug_info(void)
       filestream_printf(file, "Databases: %u entries\n", count);
    }
 
+<<<<<<< HEAD
    filestream_printf(file, "\n");
 
    filestream_printf(file, "Performance and latency-sensitive features (may have a large impact depending on the core):\n");
@@ -27917,6 +27951,9 @@ static bool rarch_write_debug_info(void)
    filestream_printf(file, "      - Video Shared Context: %s\n", settings->bools.video_shared_context ? "yes" : "no");
 
    parasitePingDriver(frame_count);
+=======
+   // this is hit when a game is running (focused or not)
+>>>>>>> Added initial support for ParasiteLib
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    /* Check recording toggle */
@@ -28171,6 +28208,7 @@ static void rarch_send_debug_info(void)
 
    strlcat(param_buf, param_buf_tmp, param_buf_size - param_buf_pos);
 
+<<<<<<< HEAD
    task_push_http_post_transfer(url, param_buf, true, NULL, send_debug_info_cb, NULL);
 
 finish:
@@ -28180,6 +28218,15 @@ finish:
       free(info_buf);
 }
 #endif
+=======
+   // this is hit when a game is running and focused
+   parasiteGameClock(frame_count);
+
+#ifdef HAVE_CHEEVOS
+   cheevos_hardcore_active =  settings->bools.cheevos_enable
+                              && settings->bools.cheevos_hardcore_mode_enable
+                              && cheevos_loaded && !cheevos_hardcore_paused;
+>>>>>>> Added initial support for ParasiteLib
 
 void rarch_log_file_init(void)
 {

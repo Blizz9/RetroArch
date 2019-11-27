@@ -3,11 +3,16 @@
 
 #include "../command.h"
 #include "../core.h"
+#include "../dynamic.h"
 #include "../gfx/video_driver.h"
 #include "parasite.h"
+#include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
 
 HANDLE parasitePipe;
+
+dylib_t parasiteDLLHandle;
+bool gameLoaded;
 
 void parasiteConnectPipe()
 {
@@ -216,3 +221,122 @@ int parasitePackUnsigned(void *buffer, int index, unsigned value)
 
    return (index + sizeof(unsigned));
 }
+
+void parasiteInit()
+{
+   if (parasiteDLLHandle == NULL)
+   {
+      // parasiteInited = true;
+      RARCH_LOG("[PARASITE]: Initializing parasite\n");
+      // parasiteDLLHandle = dylib_load("D:\\Development\\C++\\RetroArch\\ParasiteTest\\bin\\x64\\Release\\ParasiteTest.dll");
+      parasiteDLLHandle = dylib_load("ParasiteLib.dll");
+      // void (*beginThreadFunc)();
+      // beginThreadFunc = (void (*)())dylib_proc(parasiteDLL, "BeginThread");
+      // beginThreadFunc();
+      // dylib_close(parasiteDLL);
+      // RARCH_LOG("[PARASITE]: Thread started\n");
+
+      void (*initFunc)();
+      initFunc = (void (*)())dylib_proc(parasiteDLLHandle, "Init");
+      initFunc();
+   }
+}
+
+/*
+void parasiteCheckCounter()
+{
+   if (parasiteDLLHandle == NULL)
+   {
+      return;
+   }
+
+   dylib_t parasiteDLL = dylib_load("D:\\Development\\C++\\RetroArch\\ParasiteTest\\bin\\x64\\Release\\ParasiteTest.dll");
+   int (*getCounterFunc)();
+   getCounterFunc = (int (*)())dylib_proc(parasiteDLL, "GetCounter");
+   int counter = getCounterFunc();
+   dylib_close(parasiteDLL);
+   RARCH_LOG("[PARASITE]: Counter: %d\n", counter);
+}
+*/
+
+void parasiteClock()
+{
+   if (parasiteDLLHandle == NULL)
+   {
+      return;
+   }
+
+   void (*clockFunc)();
+   clockFunc = (void (*)())dylib_proc(parasiteDLLHandle, "Clock");
+   clockFunc();
+
+   if (!gameLoaded)
+   {
+      content_ctx_info_t content_info;
+      content_info.argc = 0;
+      content_info.argv = NULL;
+      content_info.args = NULL;
+      content_info.environ_get = NULL;
+      task_push_load_content_from_playlist_from_menu("D:\\Development\\C++\\RetroArch\\cores\\nestopia_libretro.dll", "D:\\Development\\C++\\RetroArch\\roms\\Super Mario Bros..zip", NULL, &content_info, NULL, NULL);
+      gameLoaded = true;
+   }
+}
+
+void parasiteGameClock(uint64_t frameCount)
+{
+   if (parasiteDLLHandle == NULL)
+   {
+      return;
+   }
+
+   retro_ctx_size_info_t serializeSizeInfo;
+   core_serialize_size(&serializeSizeInfo);
+   retro_ctx_serialize_info_t serializeInfo;
+   // void *payload = malloc(serializeSizeInfo.size);
+   serializeInfo.data = malloc(serializeSizeInfo.size);
+   serializeInfo.size = serializeSizeInfo.size;
+   bool serializeSuccessful = core_serialize(&serializeInfo);
+
+   size_t pitch;
+   unsigned width, height;
+   const void *screen = NULL;
+   
+   unsigned pixelFormat = video_driver_get_pixel_format();
+   video_driver_cached_frame_get(&screen, &width, &height, &pitch);
+   
+   // size_t sizeOfPayload = sizeof(pixelFormat) + sizeof(width) + sizeof(height) + sizeof(pitch) + (pitch * height);
+   // uint8_t *payload = malloc(sizeOfPayload);
+   
+   // int i = 0;
+   // i = parasitePackUnsigned(payload, i, pixelFormat);
+   // i = parasitePackUnsigned(payload, i, width);
+   // i = parasitePackUnsigned(payload, i, height);
+   // i = parasitePackUnsigned(payload, i, pitch);
+   // i = parasitePackBytes(payload, i, (uint8_t *)screen, (pitch * height));
+   
+   // struct parasiteMessage screenMessage;
+   // screenMessage.type = PARASITE_SCREEN;
+   // screenMessage.payloadSize = sizeOfPayload;
+   // screenMessage.payload = payload;
+   // parasiteSendMessage(&screenMessage);
+
+   void (*gameClockFunc)(uint64_t frameCount, size_t stateSize, void *stateData, unsigned pixelFormat, unsigned width, unsigned height, size_t pitch, const void *screen);
+   gameClockFunc = (void (*)(uint64_t, size_t, void *, unsigned, unsigned, unsigned, size_t, const void *))dylib_proc(parasiteDLLHandle, "GameClock");
+   gameClockFunc(frameCount, serializeInfo.size, serializeInfo.data, pixelFormat, width, height, pitch, screen);
+}
+
+// void parasiteConsumeLogMessage()
+// {
+//    if (parasiteDLLHandle == NULL)
+//    {
+//       return;
+//    }
+
+//    const char *(*consumeLogMessageFunc)();
+//    consumeLogMessageFunc = (const char *(*)())dylib_proc(parasiteDLLHandle, "ConsumeLogMessage");
+//    const char *logMessage = consumeLogMessageFunc();
+//    if (logMessage != NULL)
+//    {
+//       RARCH_LOG("[PARASITE]: LIB Log: %s\n", logMessage);
+//    }
+// }

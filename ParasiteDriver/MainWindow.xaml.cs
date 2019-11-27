@@ -8,6 +8,12 @@ using System.Windows.Interop;
 
 namespace ParasiteDriver
 {
+    [Serializable]
+    public class Test
+    {
+        public byte[] State;
+    }
+
     public partial class MainWindow : Window
     {
         #region Win32 Api
@@ -81,6 +87,7 @@ namespace ParasiteDriver
 
             _smb = new SMB(_driver);
 
+            /*
             _raProcess = Process.Start(@"..\..\..\retroarch.exe");
             _raProcess.WaitForInputIdle();
             _raLogWindow = _raProcess.MainWindowHandle;
@@ -109,10 +116,12 @@ namespace ParasiteDriver
             MoveWindow(_raLogWindow, (int)logPanelLocation.X, (int)logPanelLocation.Y, (int)logPanel.ActualWidth, (int)logPanel.ActualHeight, true);
             Point mainPanelLocation = mainPanel.TransformToAncestor(Application.Current.MainWindow).Transform(new Point(0, 0));
             MoveWindow(_raWindow, (int)mainPanelLocation.X, (int)mainPanelLocation.Y, (int)mainPanel.ActualWidth, (int)mainPanel.ActualHeight, true);
+            */
         }
 
         private void driverConnected()
         {
+            /*
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
                 foreach (ProcessThread thread in _raProcess.Threads)
@@ -134,6 +143,7 @@ namespace ParasiteDriver
                 SetWindowLong(_raWindow, GWL_STYLE, WS_VISIBLE);
                 MoveWindow(_raWindow, 0, 0, 879, 672, true);
             }));
+            */
         }
 
         private void hotKeyPressed()

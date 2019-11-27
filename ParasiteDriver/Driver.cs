@@ -1,7 +1,9 @@
+using ParasiteLib;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -42,36 +44,81 @@ namespace ParasiteDriver
                 {
                     try
                     {
-                        Message pingMessage = waitForMessageType(MessageType.Ping);
+                        byte[] readBuffer = new byte[sizeof(int)];
+                        int readByteCount = _namedPipeServerStream.Read(readBuffer, 0, readBuffer.Length);
 
-                        int i = 0;
-                        ulong frameCount = BitConverter.ToUInt64(pingMessage.Payload, i);
-                        i += sizeof(ulong);
+                        if (readByteCount == 0)
+                        {
+                            _namedPipeServerStream.Close();
+                            throw new NamedPipeClosedException("Incorrect message type was received, likely the named pipe was closed from the other end.");
+                        }
 
-                        byte[] state = new byte[pingMessage.Payload.Length - i];
-                        Array.Copy(pingMessage.Payload, i, state, 0, (pingMessage.Payload.Length - i));
+                        // int messageType = BitConverter.ToInt32(readBuffer, 0);
+                        // int messageSize = BitConverter.ToInt32(readBuffer, sizeof(int));
+                        int messageSize = BitConverter.ToInt32(readBuffer, 0);
 
-                        Task.Factory.StartNew(() => Clock?.Invoke((int)frameCount, state));
+                        readBuffer = new byte[messageSize];
+                        readByteCount = _namedPipeServerStream.Read(readBuffer, 0, messageSize);
 
-                        if (PauseToggle)
+                        ParasiteLib.Message message;
+                        BinaryFormatter binaryFormatter = new BinaryFormatter();
+                        using (MemoryStream memoryStream = new MemoryStream(readBuffer))
                         {
-                            PauseToggle = false;
-                            handlePauseToggle();
+                            message = (ParasiteLib.Message)binaryFormatter.Deserialize(memoryStream);
                         }
-                        else if (RequestState)
-                        {
-                            RequestState = false;
-                            handleRequestState();
-                        }
-                        else if (RequestScreen)
-                        {
-                            RequestScreen = false;
-                            handleRequestScreen();
-                        }
-                        else
-                        {
-                            handlePong();
-                        }
+
+                        Console.WriteLine(message.Type);
+                        Console.WriteLine(message.FrameCount);
+                        StateAndScreenMessage stateAndScreenMessage = (StateAndScreenMessage)message;
+                        Console.WriteLine(stateAndScreenMessage.Height);
+                        Console.WriteLine(stateAndScreenMessage.PixelFormat);
+
+                        //if (stateAndScreen.FrameCount == 120)
+                        //{
+                        //    // make all alpha bytes 0xFF since they aren't set properly
+                        //    for (int i = 3; i < stateAndScreen.Screen.Length; i += 4)
+                        //        stateAndScreen.Screen[i] = 0xFF;
+
+                        //    BitmapSource screen = BitmapSource.Create(stateAndScreen.Width, stateAndScreen.Height, 300, 300, PixelFormats.Bgra32, BitmapPalettes.Gray256, stateAndScreen.Screen, stateAndScreen.Pitch);
+
+                        //    using (FileStream fileStream = new FileStream("test.png", FileMode.Create))
+                        //    {
+                        //        BitmapEncoder encoder = new PngBitmapEncoder();
+                        //        encoder.Frames.Add(BitmapFrame.Create(screen));
+                        //        encoder.Save(fileStream);
+                        //    }
+                        //}
+
+                        //Message pingMessage = waitForMessageType(MessageType.Ping);
+
+                        //int i = 0;
+                        //ulong frameCount = BitConverter.ToUInt64(pingMessage.Payload, i);
+                        //i += sizeof(ulong);
+
+                        //byte[] state = new byte[pingMessage.Payload.Length - i];
+                        //Array.Copy(pingMessage.Payload, i, state, 0, (pingMessage.Payload.Length - i));
+
+                        //Task.Factory.StartNew(() => Clock?.Invoke((int)frameCount, state));
+
+                        //if (PauseToggle)
+                        //{
+                        //    PauseToggle = false;
+                        //    handlePauseToggle();
+                        //}
+                        //else if (RequestState)
+                        //{
+                        //    RequestState = false;
+                        //    handleRequestState();
+                        //}
+                        //else if (RequestScreen)
+                        //{
+                        //    RequestScreen = false;
+                        //    handleRequestScreen();
+                        //}
+                        //else
+                        //{
+                        //    handlePong();
+                        //}
                     }
                     catch (NamedPipeClosedException)
                     {

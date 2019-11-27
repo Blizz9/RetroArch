@@ -178,3 +178,11 @@ Parasite-Server/obj/
 ParasiteDriver/.vs/
 ParasiteDriver/bin/
 ParasiteDriver/obj/
+
+# Parasite Lib (C#)
+ParasiteLib/.vs/
+ParasiteLib/bin/
+ParasiteLib/obj/
+ParasiteLib/packages/
+ParasiteLib/ParasiteLibConsumer/bin/
+ParasiteLib/ParasiteLibConsumer/obj/

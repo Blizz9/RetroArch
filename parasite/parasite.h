@@ -44,4 +44,9 @@ int parasitePackUint64(void *buffer, int index, uint64_t value);
 int parasitePackSize(void *buffer, int index, size_t value);
 int parasitePackUnsigned(void *buffer, int index, unsigned value);
 
+void parasiteInit();
+void parasiteClock();
+void parasiteGameClock();
+void parasiteConsumeLogMessage();
+
 #endif /* __RARCH_PARASITE_H */

@@ -84,7 +84,13 @@
       "xiosbase": "c",
       "functional": "c",
       "xtr1common": "c",
-      "run_ahead.h": "c"
+      "run_ahead.h": "c",
+      "chrono": "c",
+      "memory": "c",
+      "random": "c",
+      "ratio": "c",
+      "tuple": "c",
+      "utility": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }

@@ -151,6 +151,18 @@ enum event_command
    CMD_EVENT_SHADERS_APPLY_CHANGES,
    /* A new shader preset has been loaded */
    CMD_EVENT_SHADER_PRESET_LOADED,
+   /* Initializes shader directory. */
+   CMD_EVENT_SHADER_DIR_INIT,
+   /* Deinitializes shader directory. */
+   CMD_EVENT_SHADER_DIR_DEINIT,
+   /* Initializes controllers. */
+   CMD_EVENT_CONTROLLERS_INIT,
+   /* Initializes parasite. */
+   CMD_PARASITE_INIT,
+   /* Initializes cheats. */
+   CMD_EVENT_CHEATS_INIT,
+   /* Deinitializes cheats. */
+   CMD_EVENT_CHEATS_DEINIT,
    /* Apply cheats. */
    CMD_EVENT_CHEATS_APPLY,
    /* Initializes network system. */

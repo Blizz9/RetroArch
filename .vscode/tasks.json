@@ -123,6 +123,18 @@
                ]
             }
          }
-      }
+      },
+      {
+         "label": "build-parasitetest",
+         "command": "dotnet",
+         "type": "process",
+         "args": [
+             "build",
+             "${workspaceFolder}/ParasiteTest/ParasiteTest.csproj",
+             "/property:GenerateFullPaths=true",
+             "/consoleloggerparameters:NoSummary"
+         ],
+         "problemMatcher": "$msCompile"
+     }
    ]
 }
