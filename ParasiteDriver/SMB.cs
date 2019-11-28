@@ -88,10 +88,10 @@ namespace ParasiteDriver
             _tourStopManifests.Add(new TourStopManifest(3, 4, 3, 3, 0));
             _tourStopManifests.Add(new TourStopManifest(3, 4, 4, 4, 0));
 
-            driver.Clock += handleFrame;
+            driver.GameClock += handleFrame;
         }
 
-        private void handleFrame(int frameCount, byte[] state)
+        private void handleFrame(long frameCount, byte[] state)
         {
             byte[] ram = new byte[RAM_LENGTH];
             Array.Copy(state, RAM_OFFSET, ram, 0, RAM_LENGTH);
