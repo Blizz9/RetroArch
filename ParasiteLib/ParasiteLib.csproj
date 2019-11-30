@@ -45,14 +45,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClockMessage.cs" />
     <Compile Include="Command.cs" />
     <Compile Include="CommandType.cs" />
+    <Compile Include="Communication.cs" />
+    <Compile Include="ContentLoadedMessage.cs" />
     <Compile Include="Lib.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="MessageType.cs" />
     <Compile Include="PixelFormat.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="StateAndScreenMessage.cs" />
+    <Compile Include="GameClockMessage.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

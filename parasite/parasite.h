@@ -10,6 +10,7 @@ enum parasiteCommandType
 void parasiteInit();
 void parasiteClock(uint64_t);
 void parasiteGameClock(uint64_t);
+void parasiteContentLoaded();
 void parasiteHandleLoadROM(char *, char *);
 void parasiteHandlePauseToggle();
 

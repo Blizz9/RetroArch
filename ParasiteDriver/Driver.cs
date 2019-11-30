@@ -1,23 +1,17 @@
 using ParasiteLib;
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.IO.Pipes;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 
 namespace ParasiteDriver
 {
     public class Driver
     {
-        NamedPipeServerStream _namedPipeServerStream;
+        private NamedPipeServerStream _namedPipeServerStream;
 
-        public event Action Connected;
+        public event Action ContentLoaded;
         public event Action<long, byte[]> GameClock;
-
-        public volatile bool PauseToggle;
-        public volatile bool RequestState;
-        public volatile bool RequestScreen;
 
         public Driver()
         {
@@ -36,97 +30,31 @@ namespace ParasiteDriver
                 _namedPipeServerStream.WaitForConnection();
                 Debug.WriteLine("connected.");
 
-                Connected?.Invoke();
-
                 while (true)
                 {
                     try
                     {
-                        Message message = receiveMessage();
+                        Message message = Communication.ReceiveMessage(_namedPipeServerStream);
 
                         switch (message.Type)
                         {
-                            case MessageType.StateAndScreen:
-                                StateAndScreenMessage stateAndScreenMessage = (StateAndScreenMessage)message;
-                                Task.Factory.StartNew(() => GameClock?.Invoke(stateAndScreenMessage.FrameCount, stateAndScreenMessage.State));
-                                Debug.WriteLine("Game Clock: " + stateAndScreenMessage.FrameCount);
+                            case MessageType.Clock:
+                                ClockMessage clockMessage = (ClockMessage)message;
+                                // Debug.WriteLine("Clock: " + clockMessage.FrameCount);
+                                Communication.SendMessage(_namedPipeServerStream, new Message() { Type = MessageType.Clock, FrameCount = message.FrameCount });
+                                break;
+
+                            case MessageType.GameClock:
+                                GameClockMessage gameClockMessage = (GameClockMessage)message;
+                                Task.Factory.StartNew(() => GameClock?.Invoke(gameClockMessage.FrameCount, gameClockMessage.State));
+                                // Debug.WriteLine("Game Clock: " + gameClockMessage.FrameCount + " | " + gameClockMessage.State[1938]);
+                                Communication.SendMessage(_namedPipeServerStream, new Message() { Type = MessageType.GameClock, FrameCount = message.FrameCount });
+                                break;
+
+                            case MessageType.ContentLoaded:
+                                ContentLoaded?.Invoke();
                                 break;
                         }
-                        //byte[] readBuffer = new byte[sizeof(int)];
-                        //int readByteCount = _namedPipeServerStream.Read(readBuffer, 0, readBuffer.Length);
-
-                        //if (readByteCount == 0)
-                        //{
-                        //    _namedPipeServerStream.Close();
-                        //    throw new NamedPipeClosedException("Incorrect message type was received, likely the named pipe was closed from the other end.");
-                        //}
-
-                        //// int messageType = BitConverter.ToInt32(readBuffer, 0);
-                        //// int messageSize = BitConverter.ToInt32(readBuffer, sizeof(int));
-                        //int messageSize = BitConverter.ToInt32(readBuffer, 0);
-
-                        //readBuffer = new byte[messageSize];
-                        //readByteCount = _namedPipeServerStream.Read(readBuffer, 0, messageSize);
-
-                        //Message message;
-                        //BinaryFormatter binaryFormatter = new BinaryFormatter();
-                        //using (MemoryStream memoryStream = new MemoryStream(readBuffer))
-                        //{
-                        //    message = (Message)binaryFormatter.Deserialize(memoryStream);
-                        //}
-
-                        //Console.WriteLine(message.Type);
-                        //Console.WriteLine(message.FrameCount);
-                        //StateAndScreenMessage stateAndScreenMessage = (StateAndScreenMessage)message;
-                        //Console.WriteLine(stateAndScreenMessage.Height);
-                        //Console.WriteLine(stateAndScreenMessage.PixelFormat);
-
-                        //if (stateAndScreen.FrameCount == 120)
-                        //{
-                        //    // make all alpha bytes 0xFF since they aren't set properly
-                        //    for (int i = 3; i < stateAndScreen.Screen.Length; i += 4)
-                        //        stateAndScreen.Screen[i] = 0xFF;
-
-                        //    BitmapSource screen = BitmapSource.Create(stateAndScreen.Width, stateAndScreen.Height, 300, 300, PixelFormats.Bgra32, BitmapPalettes.Gray256, stateAndScreen.Screen, stateAndScreen.Pitch);
-
-                        //    using (FileStream fileStream = new FileStream("test.png", FileMode.Create))
-                        //    {
-                        //        BitmapEncoder encoder = new PngBitmapEncoder();
-                        //        encoder.Frames.Add(BitmapFrame.Create(screen));
-                        //        encoder.Save(fileStream);
-                        //    }
-                        //}
-
-                        //Message pingMessage = waitForMessageType(MessageType.Ping);
-
-                        //int i = 0;
-                        //ulong frameCount = BitConverter.ToUInt64(pingMessage.Payload, i);
-                        //i += sizeof(ulong);
-
-                        //byte[] state = new byte[pingMessage.Payload.Length - i];
-                        //Array.Copy(pingMessage.Payload, i, state, 0, (pingMessage.Payload.Length - i));
-
-                        //Task.Factory.StartNew(() => Clock?.Invoke((int)frameCount, state));
-
-                        //if (PauseToggle)
-                        //{
-                        //    PauseToggle = false;
-                        //    handlePauseToggle();
-                        //}
-                        //else if (RequestState)
-                        //{
-                        //    RequestState = false;
-                        //    handleRequestState();
-                        //}
-                        //else if (RequestScreen)
-                        //{
-                        //    RequestScreen = false;
-                        //    handleRequestScreen();
-                        //}
-                        //else
-                        //{
-                        //    handlePong();
-                        //}
                     }
                     catch (NamedPipeClosedException)
                     {
@@ -137,31 +65,6 @@ namespace ParasiteDriver
         }
 
         //#region Message Handlers
-
-        //private void handlePong()
-        //{
-        //    Message message = new Message();
-        //    message.Type = MessageType.Pong;
-        //    sendMessage(message);
-        //}
-
-        //private void handlePauseToggle()
-        //{
-        //    Message message = new Message();
-        //    message.Type = MessageType.PauseToggle;
-        //    sendMessage(message);
-        //}
-
-        //private void handleRequestState()
-        //{
-        //    Message message = new Message();
-        //    message.Type = MessageType.RequestState;
-        //    sendMessage(message);
-
-        //    Message stateMessage = receiveMessage();
-
-        //    File.WriteAllBytes("test.state", stateMessage.Payload);
-        //}
 
         //private void handleRequestScreen()
         //{
@@ -220,58 +123,5 @@ namespace ParasiteDriver
         //}
 
         //#endregion
-
-        #region Communication Routines
-
-        private Message receiveMessage()
-        {
-            byte[] readBuffer = new byte[sizeof(int)];
-            int readByteCount = _namedPipeServerStream.Read(readBuffer, 0, readBuffer.Length);
-
-            if (readByteCount == 0)
-            {
-                _namedPipeServerStream.Close();
-                throw new NamedPipeClosedException("Incorrect message type was received, likely the named pipe was closed from the other end.");
-            }
-
-            int messageSize = BitConverter.ToInt32(readBuffer, 0);
-
-            readBuffer = new byte[messageSize];
-            readByteCount = _namedPipeServerStream.Read(readBuffer, 0, messageSize);
-
-            Message message;
-            BinaryFormatter binaryFormatter = new BinaryFormatter();
-            using (MemoryStream memoryStream = new MemoryStream(readBuffer))
-            {
-                message = (Message)binaryFormatter.Deserialize(memoryStream);
-            }
-
-            return (message);
-        }
-
-        private void sendMessage(Message message)
-        {
-            //byte[] writeBuffer = new byte[9 + message.Payload.Length];
-
-            //writeBuffer[0] = (byte)message.Type;
-            //Buffer.BlockCopy(BitConverter.GetBytes((ulong)message.Payload.Length), 0, writeBuffer, 1, sizeof(ulong));
-
-            //if (message.Payload.Length > 0)
-            //    Buffer.BlockCopy(message.Payload, 0, writeBuffer, 9, message.Payload.Length);
-
-            //_namedPipeServerStream.Write(writeBuffer, 0, writeBuffer.Length);
-        }
-
-        //private Message waitForMessageType(MessageType messageType)
-        //{
-        //    Message message = receiveMessage();
-
-        //    if (message.Type != messageType)
-        //        throw new Exception("Incorrect message type was received.");
-
-        //    return (message);
-        //}
-
-        #endregion
     }
 }

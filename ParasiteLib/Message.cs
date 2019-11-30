@@ -6,6 +6,7 @@ namespace ParasiteLib
     public class Message
     {
         public MessageType Type;
+        public long ClockCount;
         public long FrameCount;
     }
 }

@@ -3,7 +3,7 @@ using System;
 namespace ParasiteLib
 {
     [Serializable]
-    public class StateAndScreenMessage : Message
+    public class GameClockMessage : Message
     {
         public byte[] State;
         public PixelFormat PixelFormat;
@@ -11,5 +11,10 @@ namespace ParasiteLib
         public int Height;
         public int Pitch;
         public byte[] Screen;
+
+        public GameClockMessage()
+        {
+            Type = MessageType.GameClock;
+        }
     }
 }

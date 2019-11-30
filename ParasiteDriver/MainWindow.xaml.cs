@@ -83,9 +83,9 @@ namespace ParasiteDriver
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             _driver = new Driver();
-            _driver.Connected += driverConnected;
+            _driver.ContentLoaded += driverContentLoaded;
 
-            // _smb = new SMB(_driver);
+            _smb = new SMB(_driver);
 
             _raProcess = Process.Start(@"..\..\..\..\retroarch.exe");
             _raProcess.WaitForInputIdle();
@@ -117,7 +117,7 @@ namespace ParasiteDriver
             MoveWindow(_raWindow, (int)mainPanelLocation.X, (int)mainPanelLocation.Y, (int)mainPanel.ActualWidth, (int)mainPanel.ActualHeight, true);
         }
 
-        private void driverConnected()
+        private void driverContentLoaded()
         {
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -144,7 +144,7 @@ namespace ParasiteDriver
 
         private void hotKeyPressed()
         {
-            _driver.RequestScreen = true;
+            // _driver.DoWork = true;
         }
 
         private void Window_MouseUp(object sender, MouseButtonEventArgs e)

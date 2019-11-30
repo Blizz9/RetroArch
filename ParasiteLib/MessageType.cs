@@ -2,6 +2,8 @@ namespace ParasiteLib
 {
     public enum MessageType
     {
-        StateAndScreen = 1
+        Clock = 1,
+        GameClock = 2,
+        ContentLoaded = 3
     }
 }

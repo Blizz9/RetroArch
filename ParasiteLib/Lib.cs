@@ -1,73 +1,54 @@
 using RGiesecke.DllExport;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.IO.Pipes;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 
 namespace ParasiteLib
 {
     public class Lib
     {
         private static NamedPipeClientStream _namedPipeClientStream;
-        private static List<Command> _commandQueue;
-
-        private static readonly object _sync = new object();
+        private static bool TEMPROMLOADED;
 
         [DllExport("Init", CallingConvention = CallingConvention.Cdecl)]
         public static void Init()
         {
-            lock (_sync)
-            {
-                _commandQueue = new List<Command>();
-                _commandQueue.Add(new Command()
-                {
-                    Type = CommandType.LoadROM,
-                    Arg0 = @"D:\Development\C++\RetroArch\cores\nestopia_libretro.dll",
-                    // Arg0 = @"D:\Development\C++\RetroArch\cores\snes9x_libretro.dll",
-                    Arg1 = @"D:\Development\C++\RetroArch\roms\Super Mario Bros..zip"
-                    // Arg1 = @"D:\Development\C++\RetroArch\roms\Double Dribble.zip"
-                    // Arg1 = @"D:\Development\C++\RetroArch\roms\Super Mario World.zip"
-                });
-            }
-
             _namedPipeClientStream = new NamedPipeClientStream(".", "RetroArchParasite", PipeDirection.InOut);
-            Console.WriteLine("[PARASITE-LIB]: Connecting to server...");
+            Console.Write("[PARASITE-LIB]: Connecting to server...");
             _namedPipeClientStream.Connect();
-
-            Console.WriteLine("[PARASITE-LIB]: Initialized");
+            Console.WriteLine("[PARASITE-LIB]: Connected.");
         }
 
         [DllExport("Clock", CallingConvention = CallingConvention.Cdecl)]
-        public static void Clock(ulong frameCount, IntPtr commandAddress, IntPtr arg0Address, IntPtr arg1Address)
+        public static void Clock(ulong clockCount, ulong frameCount, IntPtr commandAddress, IntPtr arg0Address, IntPtr arg1Address)
         {
-            Console.WriteLine("[PARASITE-LIB]: Clock | " + frameCount);
+            Console.WriteLine(string.Format("[PARASITE-LIB]: Clock | {0} | {1}", clockCount, frameCount));
 
-            lock (_sync)
+            ClockMessage clockMessage = new ClockMessage() { ClockCount = (long)clockCount, FrameCount = (long)frameCount };
+            Communication.SendMessage(_namedPipeClientStream, clockMessage);
+            Message replyMessage = Communication.ReceiveMessage(_namedPipeClientStream);
+            // Console.WriteLine("[PARASITE-LIB]: Received Reply | " + replyMessage.FrameCount);
+
+            if (!TEMPROMLOADED)
             {
-                if (_commandQueue.Any())
-                {
-                    Command command = _commandQueue.First();
-                    _commandQueue.RemoveAt(0);
-
-                    Marshal.WriteInt32(commandAddress, (int)command.Type);
-                    Marshal.WriteIntPtr(arg0Address, Marshal.StringToHGlobalAnsi(command.Arg0));
-                    Marshal.WriteIntPtr(arg1Address, Marshal.StringToHGlobalAnsi(command.Arg1));
-                }
+                string arg0 = @"D:\Development\C++\RetroArch\cores\nestopia_libretro.dll";
+                // string arg0 = @"D:\Development\C++\RetroArch\cores\snes9x_libretro.dll",
+                string arg1 = @"D:\Development\C++\RetroArch\roms\Super Mario Bros..zip";
+                // string arg1 = @"D:\Development\C++\RetroArch\roms\Double Dribble.zip"
+                // string arg1 = @"D:\Development\C++\RetroArch\roms\Super Mario World.zip"
+                Marshal.WriteInt32(commandAddress, (int)CommandType.LoadROM);
+                Marshal.WriteIntPtr(arg0Address, Marshal.StringToHGlobalAnsi(arg0));
+                Marshal.WriteIntPtr(arg1Address, Marshal.StringToHGlobalAnsi(arg1));
+                TEMPROMLOADED = true;
             }
         }
-
+        
         [DllExport("GameClock", CallingConvention = CallingConvention.Cdecl)]
-        public static void GameClock(ulong frameCount, ulong stateSize, IntPtr stateAddress, uint pixelFormat, uint width, uint height, ulong pitch, IntPtr screenAddress)
+        public static void GameClock(ulong clockCount, ulong frameCount, ulong stateSize, IntPtr stateAddress, uint pixelFormat, uint width, uint height, ulong pitch, IntPtr screenAddress)
         {
-            Console.WriteLine("[PARASITE-LIB]: GameClock | " + frameCount);
-
-            StateAndScreenMessage message = new StateAndScreenMessage()
+            GameClockMessage gameClockMessage = new GameClockMessage()
             {
-                Type = MessageType.StateAndScreen,
+                ClockCount = (long)clockCount,
                 FrameCount = (long)frameCount,
                 State = new byte[(int)stateSize],
                 PixelFormat = (PixelFormat)(int)pixelFormat,
@@ -75,24 +56,16 @@ namespace ParasiteLib
                 Height = (int)height,
                 Pitch = (int)pitch,
             };
-            Marshal.Copy(stateAddress, message.State, 0, (int)stateSize);
-            int screenSize = message.Pitch * message.Height;
-            message.Screen = new byte[screenSize];
-            Marshal.Copy(screenAddress, message.Screen, 0, screenSize);
+            Marshal.Copy(stateAddress, gameClockMessage.State, 0, (int)stateSize);
+            int screenSize = gameClockMessage.Pitch * gameClockMessage.Height;
+            gameClockMessage.Screen = new byte[screenSize];
+            Marshal.Copy(screenAddress, gameClockMessage.Screen, 0, screenSize);
 
-            byte[] messageBytes;
-            BinaryFormatter binaryFormatter = new BinaryFormatter();
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                binaryFormatter.Serialize(memoryStream, message);
-                messageBytes = memoryStream.ToArray();
-            }
+            Console.WriteLine(string.Format("[PARASITE-LIB]: GameClock | {0} | {1} | {2} | {3}", clockCount, frameCount, gameClockMessage.Width, gameClockMessage.Height));
 
-            byte[] pipeBuffer = new byte[sizeof(int) + messageBytes.Length];
-            Buffer.BlockCopy(BitConverter.GetBytes(messageBytes.Length), 0, pipeBuffer, 0, sizeof(int));
-            Buffer.BlockCopy(messageBytes, 0, pipeBuffer, sizeof(int), messageBytes.Length);
-
-            _namedPipeClientStream.Write(pipeBuffer, 0, pipeBuffer.Length);
+            Communication.SendMessage(_namedPipeClientStream, gameClockMessage);
+            Message replyMessage = Communication.ReceiveMessage(_namedPipeClientStream);
+            // Console.WriteLine("[PARASITE-LIB]: Received Reply | " + replyMessage.FrameCount);
 
             //if (frameCount == 240)
             //{
@@ -101,6 +74,23 @@ namespace ParasiteLib
             //        Type = CommandType.PauseToggle,
             //    });
             //}
+        }
+
+        [DllExport("ContentLoaded", CallingConvention = CallingConvention.Cdecl)]
+        public static void ContentLoaded(ulong clockCount, IntPtr contentPathAddress, IntPtr coreNameAddress, IntPtr coreVersionAddress)
+        {
+            ContentLoadedMessage contentLoadedMessage = new ContentLoadedMessage()
+            {
+                ClockCount = (long)clockCount,
+                FrameCount = long.MinValue,
+                ContentPath = Marshal.PtrToStringAnsi(contentPathAddress),
+                CoreName = Marshal.PtrToStringAnsi(coreNameAddress),
+                CoreVersion = Marshal.PtrToStringAnsi(coreVersionAddress),
+            };
+
+            Console.WriteLine(string.Format("[PARASITE-LIB]: ContentLoaded | {0} | {1} | {2} | {3}", clockCount, contentLoadedMessage.ContentPath, contentLoadedMessage.CoreName, contentLoadedMessage.CoreVersion));
+
+            Communication.SendMessage(_namedPipeClientStream, contentLoadedMessage);
         }
     }
 }

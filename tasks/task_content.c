@@ -80,6 +80,8 @@
 #include "../menu/menu_shader.h"
 #endif
 
+#include "../parasite/parasite.h"
+
 #ifdef HAVE_CHEEVOS
 #include "../cheevos-new/cheevos.h"
 #endif
@@ -1437,6 +1439,8 @@ static void task_push_to_history_list(
             command_playlist_push_write(
                   playlist_hist, &entry);
          }
+
+         parasiteContentLoaded();
       }
 
       free(tmp);

@@ -96,8 +96,9 @@ namespace ParasiteDriver
             byte[] ram = new byte[RAM_LENGTH];
             Array.Copy(state, RAM_OFFSET, ram, 0, RAM_LENGTH);
 
-            if ((ram[LEVEL_LOADING_STATE] == 0) && ((_lastFrameRAM[LIVES] - 1) == ram[LIVES]))
-                _deathOccurred = true;
+            if (_lastFrameRAM != null)
+                if ((ram[LEVEL_LOADING_STATE] == 0) && ((_lastFrameRAM[LIVES] - 1) == ram[LIVES]))
+                    _deathOccurred = true;
 
             if (_deathOccurred && (ram[LEVEL_LOADING_STATE] == 1))
             {
