@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -128,7 +129,7 @@ namespace ParasiteDriver
 
                 File.WriteAllBytes(stateName, state);
 
-                Console.WriteLine("Wrote state file: " + stateName);
+                Debug.WriteLine("Wrote state file: " + stateName);
             }
 
             _lastFrameRAM = ram;

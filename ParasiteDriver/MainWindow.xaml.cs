@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
@@ -91,11 +93,6 @@ namespace ParasiteDriver
             _textBoxTextWriter = new TextBoxTextWriter(logTextBox);
             Console.SetOut(_textBoxTextWriter);
 
-            for (int i = 0; i < 50; i++)
-            {
-                Console.Write(i);
-            }
-
             _driver = new Driver();
             _driver.ContentLoaded += driverContentLoaded;
 
@@ -158,7 +155,7 @@ namespace ParasiteDriver
 
         private void hotKeyPressed()
         {
-            // _driver.SaveScreen = true;
+            _driver.SaveScreen = true;
         }
 
         private void Window_MouseUp(object sender, MouseButtonEventArgs e)
@@ -179,6 +176,47 @@ namespace ParasiteDriver
         private void mouseUp12(object sender, MouseButtonEventArgs e)
         {
             _driver.LoadState = "1-2.state";
+        }
+
+        private void mouseUp12c(object sender, MouseButtonEventArgs e)
+        {
+            _driver.LoadState = "1-2 (checkpoint).state";
+        }
+
+        private void mouseUp13(object sender, MouseButtonEventArgs e)
+        {
+            _driver.LoadState = "1-3.state";
+        }
+
+        private void mouseUp13c(object sender, MouseButtonEventArgs e)
+        {
+            _driver.LoadState = "1-3 (checkpoint).state";
+        }
+
+        private void mouseUp14(object sender, MouseButtonEventArgs e)
+        {
+            _driver.LoadState = "1-4.state";
+        }
+
+        private void mouseUp21(object sender, MouseButtonEventArgs e)
+        {
+            _driver.LoadState = "2-1.state";
+        }
+
+        private void loadLastState(object sender, RoutedEventArgs e)
+        {
+            string[] stateFiles = Directory.GetFiles(".", "*.state");
+            _driver.LoadState = stateFiles.Last();
+            SetForegroundWindow(_raWindow);
+        }
+
+        private void makeMarioLarge(object sender, RoutedEventArgs e)
+        {
+            Dictionary<int, byte> bytes = new Dictionary<int, byte>();
+            bytes.Add(0x0754 + 0x38, 0);
+            bytes.Add(0x0756 + 0x38, 1);
+            _driver.InjectBytes = bytes;
+            SetForegroundWindow(_raWindow);
         }
     }
 }

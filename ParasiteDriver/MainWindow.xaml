@@ -16,6 +16,20 @@
             <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\x64\Debug\1-1.png" MouseUp="mouseUp11" />
             <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\x64\Debug\1-1 (checkpoint).png" MouseUp="mouseUp11c" />
             <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\x64\Debug\1-2.png" MouseUp="mouseUp12" />
+            <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\x64\Debug\1-2 (checkpoint).png" MouseUp="mouseUp12c" />
+            <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\x64\Debug\1-3.png" MouseUp="mouseUp13" />
+            <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\x64\Debug\1-3 (checkpoint).png" MouseUp="mouseUp13c" />
+            <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\x64\Debug\1-4.png" MouseUp="mouseUp14" />
+            <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\x64\Debug\2-1.png" MouseUp="mouseUp21" />
+        </StackPanel>
+        <StackPanel DockPanel.Dock="Right" Margin="0,10,10,10" Width="400">
+            <StackPanel.Resources>
+                <Style TargetType="{x:Type Button}">
+                    <Setter Property="Margin" Value="0,0,0,5" />
+                </Style>
+            </StackPanel.Resources>
+            <Button Height="32" Width="128" Click="loadLastState">Load Last State</Button>
+            <Button Height="32" Width="128" Click="makeMarioLarge">Make Mario Large</Button>
         </StackPanel>
         <Border Name="raLogPanel" DockPanel.Dock="Bottom" Margin="10,0,10,10" VerticalAlignment="Bottom" Height="200" />
         <ParasiteDriver:ScrollingTextBox x:Name="logTextBox" DockPanel.Dock="Bottom" Margin="10,0,10,10" VerticalAlignment="Bottom" Height="200" FontFamily="Consolas" FontSize="11" Background="Black" Foreground="White" />
