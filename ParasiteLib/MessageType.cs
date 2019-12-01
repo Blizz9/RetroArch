@@ -4,6 +4,8 @@ namespace ParasiteLib
     {
         Clock = 1,
         GameClock = 2,
-        ContentLoaded = 3
+        Command = 3,
+        ContentLoaded = 4,
+        LoadState = 5
     }
 }

@@ -12,9 +12,9 @@
                     <Setter Property="Margin" Value="0,0,0,5"/>
                 </Style>
             </StackPanel.Resources>
-            <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\Debug\1-1.png" />
-            <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\Debug\1-1 (checkpoint).png" />
-            <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\Debug\1-2.png" />
+            <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\x64\Debug\1-1.png" MouseUp="mouseUp11" />
+            <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\x64\Debug\1-1 (checkpoint).png" MouseUp="mouseUp11c" />
+            <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\x64\Debug\1-2.png" MouseUp="mouseUp12" />
         </StackPanel>
         <Border Name="logPanel" DockPanel.Dock="Bottom" Margin="10,0,10,10" VerticalAlignment="Bottom" Height="200" />
         <Border Name="mainPanel" Margin="10,10,10,10" Height="672" Width="879" />

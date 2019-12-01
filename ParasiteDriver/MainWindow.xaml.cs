@@ -85,7 +85,7 @@ namespace ParasiteDriver
             _driver = new Driver();
             _driver.ContentLoaded += driverContentLoaded;
 
-            _smb = new SMB(_driver);
+            // _smb = new SMB(_driver);
 
             _raProcess = Process.Start(@"..\..\..\..\retroarch.exe");
             _raProcess.WaitForInputIdle();
@@ -144,12 +144,27 @@ namespace ParasiteDriver
 
         private void hotKeyPressed()
         {
-            // _driver.DoWork = true;
+            // _driver.SaveScreen = true;
         }
 
         private void Window_MouseUp(object sender, MouseButtonEventArgs e)
         {
             SetForegroundWindow(_raWindow);
+        }
+
+        private void mouseUp11(object sender, MouseButtonEventArgs e)
+        {
+            _driver.LoadState = "1-1.state";
+        }
+
+        private void mouseUp11c(object sender, MouseButtonEventArgs e)
+        {
+            _driver.LoadState = "1-1 (checkpoint).state";
+        }
+
+        private void mouseUp12(object sender, MouseButtonEventArgs e)
+        {
+            _driver.LoadState = "1-2.state";
         }
     }
 }

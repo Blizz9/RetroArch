@@ -46,11 +46,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ClockMessage.cs" />
-    <Compile Include="Command.cs" />
+    <Compile Include="CommandMessage.cs" />
     <Compile Include="CommandType.cs" />
     <Compile Include="Communication.cs" />
     <Compile Include="ContentLoadedMessage.cs" />
     <Compile Include="Lib.cs" />
+    <Compile Include="LoadStateMessage.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="MessageType.cs" />
     <Compile Include="PixelFormat.cs" />

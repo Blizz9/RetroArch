@@ -1,8 +1,11 @@
 using ParasiteLib;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.IO.Pipes;
 using System.Threading.Tasks;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ParasiteDriver
 {
@@ -10,12 +13,29 @@ namespace ParasiteDriver
     {
         private NamedPipeServerStream _namedPipeServerStream;
 
+        private volatile object _sync = new object();
+        private string _loadState;
+
         public event Action ContentLoaded;
         public event Action<long, byte[]> GameClock;
 
         public Driver()
         {
             Task.Factory.StartNew(() => messageLoop());
+        }
+
+        public string LoadState
+        {
+            get
+            {
+                lock (_sync)
+                    return _loadState;
+            }
+            set
+            {
+                lock (_sync)
+                    _loadState = value;
+            }
         }
 
         private void messageLoop()
@@ -41,14 +61,39 @@ namespace ParasiteDriver
                             case MessageType.Clock:
                                 ClockMessage clockMessage = (ClockMessage)message;
                                 // Debug.WriteLine("Clock: " + clockMessage.FrameCount);
-                                Communication.SendMessage(_namedPipeServerStream, new Message() { Type = MessageType.Clock, FrameCount = message.FrameCount });
+                                if (message.ClockCount == 1)
+                                {
+                                    string arg0 = @"D:\Development\C++\RetroArch\cores\nestopia_libretro.dll";
+                                    // string arg0 = @"D:\Development\C++\RetroArch\cores\snes9x_libretro.dll",
+                                    string arg1 = @"D:\Development\C++\RetroArch\roms\Super Mario Bros..zip";
+                                    // string arg1 = @"D:\Development\C++\RetroArch\roms\Double Dribble.zip"
+                                    // string arg1 = @"D:\Development\C++\RetroArch\roms\Super Mario World.zip"
+
+                                    Communication.SendMessage(_namedPipeServerStream, new CommandMessage() { ClockCount = message.ClockCount, FrameCount = message.FrameCount, CommandType = CommandType.LoadROM, Arg0 = arg0, Arg1 = arg1 });
+                                }
+                                else
+                                {
+                                    Communication.SendMessage(_namedPipeServerStream, new ClockMessage() { ClockCount = message.ClockCount, FrameCount = message.FrameCount });
+                                }
                                 break;
 
                             case MessageType.GameClock:
                                 GameClockMessage gameClockMessage = (GameClockMessage)message;
                                 Task.Factory.StartNew(() => GameClock?.Invoke(gameClockMessage.FrameCount, gameClockMessage.State));
-                                // Debug.WriteLine("Game Clock: " + gameClockMessage.FrameCount + " | " + gameClockMessage.State[1938]);
-                                Communication.SendMessage(_namedPipeServerStream, new Message() { Type = MessageType.GameClock, FrameCount = message.FrameCount });
+                                if (string.IsNullOrWhiteSpace(LoadState))
+                                {
+                                    Communication.SendMessage(_namedPipeServerStream, new GameClockMessage() { ClockCount = message.ClockCount, FrameCount = message.FrameCount });
+                                }
+                                else
+                                {
+                                    // Task.Factory.StartNew(() => saveScreen(gameClockMessage.Width, gameClockMessage.Height, gameClockMessage.Pitch, gameClockMessage.PixelFormat, gameClockMessage.Screen));
+                                    LoadStateMessage loadStateMessage = new LoadStateMessage() { ClockCount = message.ClockCount, FrameCount = message.FrameCount };
+                                    // loadStateMessage.State = gameClockMessage.State;
+                                    // loadStateMessage.State[1938] = 5;
+                                    loadStateMessage.State = File.ReadAllBytes(LoadState);
+                                    LoadState = string.Empty;
+                                    Communication.SendMessage(_namedPipeServerStream, loadStateMessage);
+                                }
                                 break;
 
                             case MessageType.ContentLoaded:
@@ -64,64 +109,41 @@ namespace ParasiteDriver
             }
         }
 
-        //#region Message Handlers
+        private void saveScreen(int width, int height, int pitch, ParasiteLib.PixelFormat raPixelFormat, byte[] screenData)
+        {
+            System.Windows.Media.PixelFormat pixelFormat;
+            switch (raPixelFormat)
+            {
+                case ParasiteLib.PixelFormat.RGB1555:
+                    pixelFormat = PixelFormats.Bgr555;
+                    break;
 
-        //private void handleRequestScreen()
-        //{
-        //    Message message = new Message();
-        //    message.Type = MessageType.RequestScreen;
-        //    sendMessage(message);
+                case ParasiteLib.PixelFormat.RGB565:
+                    pixelFormat = PixelFormats.Bgr565;
+                    break;
 
-        //    Message screenMessage = receiveMessage();
+                case ParasiteLib.PixelFormat.XRGB8888:
+                    pixelFormat = PixelFormats.Bgra32;
+                    break;
 
-        //    int i = 0;
-        //    uint raPixelFormat = BitConverter.ToUInt32(screenMessage.Payload, i);
-        //    i += sizeof(uint);
-        //    uint width = BitConverter.ToUInt32(screenMessage.Payload, i);
-        //    i += sizeof(uint);
-        //    uint height = BitConverter.ToUInt32(screenMessage.Payload, i);
-        //    i += sizeof(uint);
-        //    uint pitch = BitConverter.ToUInt32(screenMessage.Payload, i);
-        //    i += sizeof(uint);
+                default:
+                    pixelFormat = PixelFormats.Bgra32;
+                    break;
+            }
 
-        //    byte[] screenPayload = new byte[height * pitch];
-        //    Array.Copy(screenMessage.Payload, i, screenPayload, 0, (height * pitch));
+            if (raPixelFormat == ParasiteLib.PixelFormat.XRGB8888)
+                // make all alpha bytes 0xFF since they aren't set properly
+                for (int i = 3; i < screenData.Length; i += 4)
+                    screenData[i] = 0xFF;
 
-        //    System.Windows.Media.PixelFormat pixelFormat;
-        //    switch ((PixelFormat)raPixelFormat)
-        //    {
-        //        case PixelFormat.RGB1555:
-        //            pixelFormat = PixelFormats.Bgr555;
-        //            break;
+            BitmapSource screen = BitmapSource.Create((int)width, (int)height, 300, 300, pixelFormat, BitmapPalettes.Gray256, screenData, (int)pitch);
 
-        //        case PixelFormat.RGB565:
-        //            pixelFormat = PixelFormats.Bgr565;
-        //            break;
-
-        //        case PixelFormat.XRGB8888:
-        //            pixelFormat = PixelFormats.Bgra32;
-        //            break;
-
-        //        default:
-        //            pixelFormat = PixelFormats.Bgra32;
-        //            break;
-        //    }
-
-        //    if ((PixelFormat)raPixelFormat == PixelFormat.XRGB8888)
-        //        // make all alpha bytes 0xFF since they aren't set properly
-        //        for (i = 3; i < screenPayload.Length; i += 4)
-        //            screenPayload[i] = 0xFF;
-
-        //    BitmapSource screen = BitmapSource.Create((int)width, (int)height, 300, 300, pixelFormat, BitmapPalettes.Gray256, screenPayload, (int)pitch);
-
-        //    using (FileStream fileStream = new FileStream("test.png", FileMode.Create))
-        //    {
-        //        BitmapEncoder encoder = new PngBitmapEncoder();
-        //        encoder.Frames.Add(BitmapFrame.Create(screen));
-        //        encoder.Save(fileStream);
-        //    }
-        //}
-
-        //#endregion
+            using (FileStream fileStream = new FileStream("test.png", FileMode.Create))
+            {
+                BitmapEncoder encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(screen));
+                encoder.Save(fileStream);
+            }
+        }
     }
 }

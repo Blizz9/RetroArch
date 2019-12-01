@@ -8,8 +8,6 @@ namespace ParasiteLibConsumer
         public static void Main(string[] args)
         {
             Lib.Init();
-            string logMessage = Lib.ConsumeLogMessage();
-            Console.WriteLine(logMessage);
         }
     }
 }

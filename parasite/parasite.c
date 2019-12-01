@@ -16,7 +16,7 @@ uint64_t parasiteClockCount;
 dylib_t parasiteDLLHandle;
 void (*parasiteInitFunc)();
 void (*parasiteClockFunc)(uint64_t, uint64_t, int32_t *, char **, char **);
-void (*parasiteGameClockFunc)(uint64_t, uint64_t, size_t, void *, unsigned, unsigned, unsigned, size_t, const void *);
+void (*parasiteGameClockFunc)(uint64_t, uint64_t, size_t, void *, unsigned, unsigned, unsigned, size_t, const void *, unsigned char *);
 void (*parasiteContentLoadedFunc)(uint64_t, const char *, const char *, const char *);
 
 void parasiteInit()
@@ -29,7 +29,7 @@ void parasiteInit()
 
       parasiteInitFunc = (void (*)())dylib_proc(parasiteDLLHandle, "Init");
       parasiteClockFunc = (void (*)(uint64_t, uint64_t, int32_t *, char **, char **))dylib_proc(parasiteDLLHandle, "Clock");
-      parasiteGameClockFunc = (void (*)(uint64_t, uint64_t, size_t, void *, unsigned, unsigned, unsigned, size_t, const void *))dylib_proc(parasiteDLLHandle, "GameClock");
+      parasiteGameClockFunc = (void (*)(uint64_t, uint64_t, size_t, void *, unsigned, unsigned, unsigned, size_t, const void *, unsigned char *))dylib_proc(parasiteDLLHandle, "GameClock");
       parasiteContentLoadedFunc = (void (*)(uint64_t, const char *, const char *, const char *))dylib_proc(parasiteDLLHandle, "ContentLoaded");
 
       parasiteInitFunc();
@@ -71,7 +71,17 @@ void parasiteGameClock(uint64_t frameCount)
    unsigned pixelFormat = video_driver_get_pixel_format();
    video_driver_cached_frame_get(&screen, &width, &height, &pitch);
 
-   parasiteGameClockFunc(parasiteClockCount, frameCount, serializeInfo.size, serializeInfo.data, pixelFormat, width, height, pitch, screen);
+   unsigned char *loadState = malloc(1);
+   *loadState = 0;
+
+   parasiteGameClockFunc(parasiteClockCount, frameCount, serializeInfo.size, serializeInfo.data, pixelFormat, width, height, pitch, screen, loadState);
+
+   if (*loadState)
+   {
+      RARCH_LOG("[PARASITE]: Loading State\n");
+      serializeInfo.data_const = serializeInfo.data;
+      bool unserializeSuccessful = core_unserialize(&serializeInfo);
+   }
 }
 
 void parasiteContentLoaded()

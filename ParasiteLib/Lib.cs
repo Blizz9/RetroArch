@@ -8,7 +8,6 @@ namespace ParasiteLib
     public class Lib
     {
         private static NamedPipeClientStream _namedPipeClientStream;
-        private static bool TEMPROMLOADED;
 
         [DllExport("Init", CallingConvention = CallingConvention.Cdecl)]
         public static void Init()
@@ -22,29 +21,24 @@ namespace ParasiteLib
         [DllExport("Clock", CallingConvention = CallingConvention.Cdecl)]
         public static void Clock(ulong clockCount, ulong frameCount, IntPtr commandAddress, IntPtr arg0Address, IntPtr arg1Address)
         {
-            Console.WriteLine(string.Format("[PARASITE-LIB]: Clock | {0} | {1}", clockCount, frameCount));
+            // Console.WriteLine(string.Format("[PARASITE-LIB]: Clock | {0} | {1}", clockCount, frameCount));
 
             ClockMessage clockMessage = new ClockMessage() { ClockCount = (long)clockCount, FrameCount = (long)frameCount };
             Communication.SendMessage(_namedPipeClientStream, clockMessage);
             Message replyMessage = Communication.ReceiveMessage(_namedPipeClientStream);
-            // Console.WriteLine("[PARASITE-LIB]: Received Reply | " + replyMessage.FrameCount);
 
-            if (!TEMPROMLOADED)
+            if (replyMessage.Type == MessageType.Command)
             {
-                string arg0 = @"D:\Development\C++\RetroArch\cores\nestopia_libretro.dll";
-                // string arg0 = @"D:\Development\C++\RetroArch\cores\snes9x_libretro.dll",
-                string arg1 = @"D:\Development\C++\RetroArch\roms\Super Mario Bros..zip";
-                // string arg1 = @"D:\Development\C++\RetroArch\roms\Double Dribble.zip"
-                // string arg1 = @"D:\Development\C++\RetroArch\roms\Super Mario World.zip"
-                Marshal.WriteInt32(commandAddress, (int)CommandType.LoadROM);
-                Marshal.WriteIntPtr(arg0Address, Marshal.StringToHGlobalAnsi(arg0));
-                Marshal.WriteIntPtr(arg1Address, Marshal.StringToHGlobalAnsi(arg1));
-                TEMPROMLOADED = true;
+                CommandMessage commandMessage = (CommandMessage)replyMessage;
+                Console.WriteLine("[PARASITE-LIB]: Received Command to Load ROM | " + commandMessage.Arg0 + " | " + commandMessage.Arg1);
+                Marshal.WriteInt32(commandAddress, (int)commandMessage.CommandType);
+                Marshal.WriteIntPtr(arg0Address, Marshal.StringToHGlobalAnsi(commandMessage.Arg0));
+                Marshal.WriteIntPtr(arg1Address, Marshal.StringToHGlobalAnsi(commandMessage.Arg1));
             }
         }
         
         [DllExport("GameClock", CallingConvention = CallingConvention.Cdecl)]
-        public static void GameClock(ulong clockCount, ulong frameCount, ulong stateSize, IntPtr stateAddress, uint pixelFormat, uint width, uint height, ulong pitch, IntPtr screenAddress)
+        public static void GameClock(ulong clockCount, ulong frameCount, ulong stateSize, IntPtr stateAddress, uint pixelFormat, uint width, uint height, ulong pitch, IntPtr screenAddress, IntPtr loadStateAddress)
         {
             GameClockMessage gameClockMessage = new GameClockMessage()
             {
@@ -61,19 +55,18 @@ namespace ParasiteLib
             gameClockMessage.Screen = new byte[screenSize];
             Marshal.Copy(screenAddress, gameClockMessage.Screen, 0, screenSize);
 
-            Console.WriteLine(string.Format("[PARASITE-LIB]: GameClock | {0} | {1} | {2} | {3}", clockCount, frameCount, gameClockMessage.Width, gameClockMessage.Height));
+            // Console.WriteLine(string.Format("[PARASITE-LIB]: GameClock | {0} | {1} | {2} | {3}", clockCount, frameCount, gameClockMessage.Width, gameClockMessage.Height));
 
             Communication.SendMessage(_namedPipeClientStream, gameClockMessage);
             Message replyMessage = Communication.ReceiveMessage(_namedPipeClientStream);
             // Console.WriteLine("[PARASITE-LIB]: Received Reply | " + replyMessage.FrameCount);
 
-            //if (frameCount == 240)
-            //{
-            //    _commandQueue.Add(new Command()
-            //    {
-            //        Type = CommandType.PauseToggle,
-            //    });
-            //}
+            if (replyMessage.Type == MessageType.LoadState)
+            {
+                LoadStateMessage loadStateMessage = (LoadStateMessage)replyMessage;
+                Marshal.Copy(loadStateMessage.State, 0, stateAddress, loadStateMessage.State.Length);
+                Marshal.WriteByte(loadStateAddress, 1);
+            }
         }
 
         [DllExport("ContentLoaded", CallingConvention = CallingConvention.Cdecl)]
