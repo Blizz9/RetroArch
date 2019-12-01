@@ -1,2 +1,2 @@
-- Window finding needs to rely on hook events to know when a window closes as opposed to waiting for the first message from parasite
 - Parasite needs to work without being in the main runloop
+- Fix memory leaks in parasite code in RA. Not deallocing.
