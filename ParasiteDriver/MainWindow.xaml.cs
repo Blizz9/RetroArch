@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
@@ -51,6 +52,9 @@ namespace ParasiteDriver
 
         #endregion
 
+        private TextWriter _textBoxTextWriter;
+        private TraceListener _textBoxTraceListener;
+
         private Process _raProcess;
         private IntPtr _raLogWindow = IntPtr.Zero;
         private IntPtr _raWindow = IntPtr.Zero;
@@ -82,6 +86,16 @@ namespace ParasiteDriver
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            _textBoxTraceListener = new TextBoxTraceListener(logTextBox);
+            Debug.Listeners.Add(_textBoxTraceListener);
+            _textBoxTextWriter = new TextBoxTextWriter(logTextBox);
+            Console.SetOut(_textBoxTextWriter);
+
+            for (int i = 0; i < 50; i++)
+            {
+                Console.Write(i);
+            }
+
             _driver = new Driver();
             _driver.ContentLoaded += driverContentLoaded;
 
@@ -111,8 +125,8 @@ namespace ParasiteDriver
             SetWindowLong(_raLogWindow, GWL_STYLE, WS_VISIBLE);
             SetWindowLong(_raWindow, GWL_STYLE, WS_CHILD);
             SetWindowLong(_raWindow, GWL_STYLE, WS_VISIBLE);
-            Point logPanelLocation = logPanel.TransformToAncestor(Application.Current.MainWindow).Transform(new Point(0, 0));
-            MoveWindow(_raLogWindow, (int)logPanelLocation.X, (int)logPanelLocation.Y, (int)logPanel.ActualWidth, (int)logPanel.ActualHeight, true);
+            Point logPanelLocation = raLogPanel.TransformToAncestor(Application.Current.MainWindow).Transform(new Point(0, 0));
+            MoveWindow(_raLogWindow, (int)logPanelLocation.X, (int)logPanelLocation.Y, (int)raLogPanel.ActualWidth, (int)raLogPanel.ActualHeight, true);
             Point mainPanelLocation = mainPanel.TransformToAncestor(Application.Current.MainWindow).Transform(new Point(0, 0));
             MoveWindow(_raWindow, (int)mainPanelLocation.X, (int)mainPanelLocation.Y, (int)mainPanel.ActualWidth, (int)mainPanel.ActualHeight, true);
         }
@@ -138,7 +152,7 @@ namespace ParasiteDriver
                 SetParent(_raWindow, new WindowInteropHelper(this).Handle);
                 SetWindowLong(_raWindow, GWL_STYLE, WS_CHILD);
                 SetWindowLong(_raWindow, GWL_STYLE, WS_VISIBLE);
-                MoveWindow(_raWindow, 0, 0, 879, 672, true);
+                MoveWindow(_raWindow, 10, 10, 879, 672, true);
             }));
         }
 

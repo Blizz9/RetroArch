@@ -4,19 +4,21 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="MainWindow" ResizeMode="NoResize" SizeToContent="WidthAndHeight" Loaded="Window_Loaded" MouseUp="Window_MouseUp">
+        xmlns:ParasiteDriver="clr-namespace:ParasiteDriver"
+        Title="MainWindow" ResizeMode="NoResize" SizeToContent="WidthAndHeight" Loaded="Window_Loaded" MouseUp="Window_MouseUp" WindowStartupLocation="Manual" Left="10" Top="10">
     <DockPanel>
         <StackPanel DockPanel.Dock="Right" Margin="0,10,10,10" Width="128">
             <StackPanel.Resources>
                 <Style TargetType="{x:Type Image}">
-                    <Setter Property="Margin" Value="0,0,0,5"/>
+                    <Setter Property="Margin" Value="0,0,0,5" />
                 </Style>
             </StackPanel.Resources>
             <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\x64\Debug\1-1.png" MouseUp="mouseUp11" />
             <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\x64\Debug\1-1 (checkpoint).png" MouseUp="mouseUp11c" />
             <Image Source="D:\Development\C++\RetroArch\ParasiteDriver\bin\x64\Debug\1-2.png" MouseUp="mouseUp12" />
         </StackPanel>
-        <Border Name="logPanel" DockPanel.Dock="Bottom" Margin="10,0,10,10" VerticalAlignment="Bottom" Height="200" />
+        <Border Name="raLogPanel" DockPanel.Dock="Bottom" Margin="10,0,10,10" VerticalAlignment="Bottom" Height="200" />
+        <ParasiteDriver:ScrollingTextBox x:Name="logTextBox" DockPanel.Dock="Bottom" Margin="10,0,10,10" VerticalAlignment="Bottom" Height="200" FontFamily="Consolas" FontSize="11" Background="Black" Foreground="White" />
         <Border Name="mainPanel" Margin="10,10,10,10" Height="672" Width="879" />
     </DockPanel>
 </Window>

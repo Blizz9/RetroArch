@@ -59,7 +59,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ScrollingTextBox.cs" />
     <Compile Include="SMB.cs" />
+    <Compile Include="TextBoxTextWriter.cs" />
+    <Compile Include="TextBoxTraceListener.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
