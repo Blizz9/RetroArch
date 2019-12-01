@@ -469,7 +469,7 @@ static bool take_screenshot_choice(
       video_driver_set_texture_enable(false, false);
       if (!is_idle)
          video_driver_cached_frame();
-         return take_screenshot_viewport(screenshot_dir,
+      return take_screenshot_viewport(screenshot_dir,
             name_base, savestate, is_idle, is_paused, fullpath, use_thread,
             pixel_format_type);
    }
