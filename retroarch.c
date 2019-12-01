@@ -136,12 +136,15 @@
 #endif
 #endif
 
+<<<<<<< HEAD
 #include "input/input_mapper.h"
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
 
 #include "parasite/parasite.h"
 
+=======
+>>>>>>> Lots of minor changes to clean things up.
 #ifdef HAVE_CHEEVOS
 #include "cheevos-new/cheevos.h"
 #include "cheevos-new/fixup.h"
@@ -153,6 +156,9 @@
 #include <formats/rpng.h>
 #include "translation_defines.h"
 #endif
+
+// included to call parasiteClock() and parasiteGameClock()
+#include "parasite/parasite.h"
 
 #ifdef HAVE_DISCORD
 #include "discord/discord.h"
@@ -2438,8 +2444,10 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
    menu_input_dialog_keyboard_buffer =
       input_keyboard_start_line(menu, line->cb);
-   command_event(CMD_PARASITE_INIT, NULL);
+
    command_event(CMD_EVENT_CHEATS_INIT, NULL);
+   // init the parasite subsystem
+   command_event(CMD_PARASITE_INIT, NULL);
    drivers_init(DRIVERS_CMD_ALL);
    command_event(CMD_EVENT_COMMAND_INIT, NULL);
    command_event(CMD_EVENT_REMOTE_INIT, NULL);
@@ -27927,7 +27935,6 @@ static bool rarch_write_debug_info(void)
       filestream_printf(file, "Databases: %u entries\n", count);
    }
 
-<<<<<<< HEAD
    filestream_printf(file, "\n");
 
    filestream_printf(file, "Performance and latency-sensitive features (may have a large impact depending on the core):\n");
@@ -27951,9 +27958,6 @@ static bool rarch_write_debug_info(void)
    filestream_printf(file, "      - Video Shared Context: %s\n", settings->bools.video_shared_context ? "yes" : "no");
 
    parasitePingDriver(frame_count);
-=======
-   // this is hit when a game is running (focused or not)
->>>>>>> Added initial support for ParasiteLib
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    /* Check recording toggle */

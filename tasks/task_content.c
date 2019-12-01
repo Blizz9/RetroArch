@@ -80,13 +80,15 @@
 #include "../menu/menu_shader.h"
 #endif
 
-#include "../parasite/parasite.h"
-
 #ifdef HAVE_CHEEVOS
 #include "../cheevos-new/cheevos.h"
 #endif
 
 #include "task_content.h"
+
+// included to call parasiteContentLoaded()
+#include "../parasite/parasite.h"
+
 #include "tasks_internal.h"
 
 #include "../command.h"
@@ -1440,6 +1442,7 @@ static void task_push_to_history_list(
                   playlist_hist, &entry);
          }
 
+         // alert the parasite subsystem that new content has been loaded
          parasiteContentLoaded();
       }
 

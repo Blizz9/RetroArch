@@ -39,8 +39,6 @@
 #include <string/stdstring.h>
 #endif
 
-#include "parasite/parasite.h"
-
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
 #ifdef HAVE_NEW_CHEEVOS
@@ -49,6 +47,9 @@
 #include "cheevos/var.h"
 #endif
 #endif
+
+// included to call parasiteInit()
+#include "parasite/parasite.h"
 
 #ifdef HAVE_DISCORD
 #include "discord/discord.h"
@@ -1134,11 +1135,6 @@ static void command_event_deinit_core(bool reinit)
    command_event(CMD_EVENT_RESTORE_REMAPS, NULL);
 }
 
-static void command_event_init_parasite(void)
-{
-   parasiteInit();
-}
-
 static void command_event_init_cheats(void)
 {
    settings_t *settings          = config_get_ptr();
@@ -1159,6 +1155,12 @@ static void command_event_init_cheats(void)
 
    if (settings != NULL && settings->bools.apply_cheats_after_load)
       cheat_manager_apply_cheats();
+}
+
+// called when CMD_PARASITE_INIT is called; initializes the parasite subsystem
+static void command_event_init_parasite(void)
+{
+   parasiteInit();
 }
 
 static void command_event_load_auto_state(void)
@@ -2072,15 +2074,15 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_CHEATS_DEINIT:
          cheat_manager_state_free();
          break;
-      case CMD_PARASITE_INIT:
-         command_event_init_parasite();
-         break;
       case CMD_EVENT_CHEATS_INIT:
          command_event(CMD_EVENT_CHEATS_DEINIT, NULL);
          command_event_init_cheats();
          break;
       case CMD_EVENT_CHEATS_APPLY:
          cheat_manager_apply_cheats();
+         break;
+      case CMD_PARASITE_INIT:
+         command_event_init_parasite();
          break;
       case CMD_EVENT_REWIND_DEINIT:
 #ifdef HAVE_CHEEVOS
