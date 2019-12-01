@@ -84,11 +84,10 @@
 #include "../cheevos-new/cheevos.h"
 #endif
 
-#include "task_content.h"
-
 // included to call parasiteContentLoaded()
 #include "../parasite/parasite.h"
 
+#include "task_content.h"
 #include "tasks_internal.h"
 
 #include "../command.h"

@@ -469,11 +469,9 @@ static bool take_screenshot_choice(
       video_driver_set_texture_enable(false, false);
       if (!is_idle)
          video_driver_cached_frame();
-#if defined(VITA)
-      return take_screenshot_raw(name_base, NULL, savestate, is_idle, is_paused, fullpath, use_thread);
-#else
-      return take_screenshot_viewport(name_base, savestate, is_idle, is_paused, fullpath, use_thread);
-#endif
+         return take_screenshot_viewport(screenshot_dir,
+            name_base, savestate, is_idle, is_paused, fullpath, use_thread,
+            pixel_format_type);
    }
 
    if (!has_valid_framebuffer)
