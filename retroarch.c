@@ -140,12 +140,13 @@
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
 
-#include "parasite/parasite.h"
-
 #ifdef HAVE_CHEEVOS
 #include "cheevos-new/cheevos.h"
 #include "cheevos-new/fixup.h"
 #endif
+
+// included to call parasiteClock() and parasiteGameClock()
+#include "parasite/parasite.h"
 
 #ifdef HAVE_TRANSLATE
 #include <encodings/base64.h>
@@ -153,9 +154,6 @@
 #include <formats/rpng.h>
 #include "translation_defines.h"
 #endif
-
-// included to call parasiteClock() and parasiteGameClock()
-#include "parasite/parasite.h"
 
 #ifdef HAVE_DISCORD
 #include "discord/discord.h"
@@ -24937,7 +24935,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
    cheat_manager_state_free();
    command_event_init_cheats();
-   command_event_init_parasite();
+   parasiteInit();
    drivers_init(DRIVERS_CMD_ALL);
    input_driver_deinit_command();
    input_driver_init_command();
@@ -26598,6 +26596,9 @@ static enum runloop_state runloop_check_state(void)
    }
 #endif
 
+   // this is always hit
+   parasiteClock(frame_count);
+
    if (menu_is_alive)
    {
       enum menu_action action;
@@ -26764,6 +26765,8 @@ static enum runloop_state runloop_check_state(void)
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
       }
    }
+
+   // this is hit when the app is focused or a game is loaded (I think)
 
    /* Check game focus toggle */
    HOTKEY_CHECK(RARCH_GAME_FOCUS_TOGGLE, CMD_EVENT_GAME_FOCUS_TOGGLE, true, NULL);
@@ -27146,6 +27149,9 @@ static enum runloop_state runloop_check_state(void)
          RARCH_CHEAT_INDEX_PLUS,  CMD_EVENT_CHEAT_INDEX_PLUS,
          RARCH_CHEAT_INDEX_MINUS, CMD_EVENT_CHEAT_INDEX_MINUS,
          RARCH_CHEAT_TOGGLE,      CMD_EVENT_CHEAT_TOGGLE);
+
+   // this is hit when a game is running and focused
+   parasiteGameClock(frame_count);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (settings->bools.video_shader_watch_files)
@@ -27590,9 +27596,6 @@ static bool rarch_write_debug_info(void)
       goto error;
    }
 
-   // this is always hit
-   parasiteClock(frame_count);
-
 #ifdef HAVE_MENU
    {
       time_t time_;
@@ -27853,8 +27856,6 @@ static bool rarch_write_debug_info(void)
 
    filestream_printf(file, "\n");
 
-   // this is hit when the app is focused or a game is loaded
-
    filestream_printf(file, "Auto load state: %s\n", settings->bools.savestate_auto_load ? "yes (WARNING: not compatible with all cores)" : "no");
    filestream_printf(file, "Auto save state: %s\n", settings->bools.savestate_auto_save ? "yes" : "no");
 
@@ -27889,8 +27890,6 @@ static bool rarch_write_debug_info(void)
          count = list->size;
          string_list_free(list);
       }
-
-      parasiteCheckForMessage();
 
       filestream_printf(file, "Databases: %u entries\n", count);
    }
@@ -28178,9 +28177,6 @@ finish:
       free(info_buf);
 }
 #endif
-
-   // this is hit when a game is running and focused
-   parasiteGameClock(frame_count);
 
 void rarch_log_file_init(void)
 {

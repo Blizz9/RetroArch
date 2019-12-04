@@ -151,8 +151,6 @@ enum event_command
    CMD_EVENT_SHADERS_APPLY_CHANGES,
    /* A new shader preset has been loaded */
    CMD_EVENT_SHADER_PRESET_LOADED,
-   /* Initializes parasite. */
-   CMD_PARASITE_INIT,
    /* Apply cheats. */
    CMD_EVENT_CHEATS_APPLY,
    /* Initializes network system. */
