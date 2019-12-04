@@ -1,14 +1,12 @@
+#include <dynamic/dylib.h>
 #include <stdio.h>
 #include <windows.h>
 
 #include "../command.h"
-#include "../core.h"
-#include "../dynamic.h"
-#include "../gfx/video_driver.h"
 #include "parasite.h"
 #include "../paths.h"
 #include "../retroarch.h"
-#include "../tasks/tasks_internal.h"
+#include "../tasks/task_content.h"
 #include "../verbosity.h"
 
 uint64_t parasiteClockCount;
