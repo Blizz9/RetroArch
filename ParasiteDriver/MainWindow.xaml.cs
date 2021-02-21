@@ -98,7 +98,7 @@ namespace ParasiteDriver
 
             // _smb = new SMB(_driver);
 
-            _raProcess = Process.Start(@"..\..\..\..\retroarch.exe");
+            _raProcess = Process.Start(@"..\..\..\..\retroarch.exe", "--verbose");
             _raProcess.WaitForInputIdle();
             _raLogWindow = _raProcess.MainWindowHandle;
 
@@ -125,7 +125,8 @@ namespace ParasiteDriver
             Point logPanelLocation = raLogPanel.TransformToAncestor(Application.Current.MainWindow).Transform(new Point(0, 0));
             MoveWindow(_raLogWindow, (int)logPanelLocation.X, (int)logPanelLocation.Y, (int)raLogPanel.ActualWidth, (int)raLogPanel.ActualHeight, true);
             Point mainPanelLocation = mainPanel.TransformToAncestor(Application.Current.MainWindow).Transform(new Point(0, 0));
-            MoveWindow(_raWindow, (int)mainPanelLocation.X, (int)mainPanelLocation.Y, (int)mainPanel.ActualWidth, (int)mainPanel.ActualHeight, true);
+            // this 93% value needs to be tuned, not sure why it is needed now
+            MoveWindow(_raWindow, (int)mainPanelLocation.X, (int)mainPanelLocation.Y, (int)(mainPanel.ActualWidth * .93f), (int)(mainPanel.ActualHeight * .93f), true);
         }
 
         private void driverContentLoaded()
@@ -149,7 +150,9 @@ namespace ParasiteDriver
                 SetParent(_raWindow, new WindowInteropHelper(this).Handle);
                 SetWindowLong(_raWindow, GWL_STYLE, WS_CHILD);
                 SetWindowLong(_raWindow, GWL_STYLE, WS_VISIBLE);
-                MoveWindow(_raWindow, 10, 10, 879, 672, true);
+                Point mainPanelLocation = mainPanel.TransformToAncestor(Application.Current.MainWindow).Transform(new Point(0, 0));
+                // this 93% value needs to be tuned, not sure why it is needed now
+                MoveWindow(_raWindow, (int)mainPanelLocation.X, (int)mainPanelLocation.Y, (int)(mainPanel.ActualWidth * .93f), (int)(mainPanel.ActualHeight * .93f), true);
             }));
         }
 
