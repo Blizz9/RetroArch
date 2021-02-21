@@ -173,6 +173,9 @@
 #include "cheevos/fixup.h"
 #endif
 
+// included to call parasiteClock() and parasiteGameClock()
+#include "parasite/parasite.h"
+
 #ifdef HAVE_TRANSLATE
 #include <encodings/base64.h>
 #include <formats/rbmp.h>
@@ -36793,6 +36796,7 @@ bool retroarch_main_init(int argc, char *argv[])
    cheat_manager_state_free();
    command_event_init_cheats(p_rarch->configuration_settings, p_rarch);
 #endif
+   parasiteInit();
    drivers_init(p_rarch, DRIVERS_CMD_ALL);
    input_driver_deinit_command(p_rarch);
    input_driver_init_command(p_rarch);
@@ -38810,6 +38814,9 @@ static enum runloop_state runloop_check_state(
    }
 #endif
 
+   // this is always hit
+   parasiteClock(frame_count);
+
 #ifdef HAVE_MENU
    if (menu_is_alive)
    {
@@ -38954,6 +38961,8 @@ static enum runloop_state runloop_check_state(
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
       }
    }
+
+   // this is hit when the app is focused or a game is loaded (I think)
 
    /* Check game focus toggle */
    HOTKEY_CHECK(RARCH_GAME_FOCUS_TOGGLE, CMD_EVENT_GAME_FOCUS_TOGGLE, true, NULL);
@@ -39340,6 +39349,8 @@ static enum runloop_state runloop_check_state(
          RARCH_CHEAT_INDEX_MINUS, CMD_EVENT_CHEAT_INDEX_MINUS,
          RARCH_CHEAT_TOGGLE,      CMD_EVENT_CHEAT_TOGGLE);
 
+   // this is hit when a game is running and focused
+   parasiteGameClock(frame_count);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (settings->bools.video_shader_watch_files)

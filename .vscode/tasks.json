@@ -51,7 +51,7 @@
          "command": "./configure; make -j2",
          "options": {
             "shell": {
-               "executable": "C:\\msys64\\usr\\bin\\bash.exe",
+               "executable": "${workspaceRoot}\\..\\..\\msys64\\usr\\bin\\bash.exe",
                "args": [
                   "-c"
                ]
@@ -67,7 +67,7 @@
          "command": "./configure; DEBUG=1 make -j2",
          "options": {
             "shell": {
-               "executable": "C:\\msys64\\usr\\bin\\bash.exe",
+               "executable": "${workspaceRoot}\\..\\..\\msys64\\usr\\bin\\bash.exe",
                "args": [
                   "-c"
                ]
@@ -83,7 +83,7 @@
          "command": "make -j2",
          "options": {
             "shell": {
-               "executable": "C:\\msys64\\usr\\bin\\bash.exe",
+               "executable": "${workspaceRoot}\\..\\..\\msys64\\usr\\bin\\bash.exe",
                "args": [
                   "-c"
                ]
@@ -99,7 +99,7 @@
          "command": "make clean",
          "options": {
             "shell": {
-               "executable": "C:\\msys64\\usr\\bin\\bash.exe",
+               "executable": "${workspaceRoot}\\..\\..\\msys64\\usr\\bin\\bash.exe",
                "args": [
                   "-c"
                ]
@@ -117,7 +117,7 @@
          "command": "./retroarch -v",
          "options": {
             "shell": {
-               "executable": "C:\\msys64\\usr\\bin\\bash.exe",
+               "executable": "${workspaceRoot}\\..\\..\\msys64\\usr\\bin\\bash.exe",
                "args": [
                   "-c"
                ]

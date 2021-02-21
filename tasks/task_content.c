@@ -86,6 +86,9 @@
 #include "../cheevos/cheevos.h"
 #endif
 
+// included to call parasiteContentLoaded()
+#include "../parasite/parasite.h"
+
 #include "task_content.h"
 #include "tasks_internal.h"
 
@@ -1425,6 +1428,9 @@ static void task_push_to_history_list(
 
             command_playlist_push_write(playlist_hist, &entry);
          }
+
+         // alert the parasite subsystem that new content has been loaded
+         parasiteContentLoaded();
       }
 
       free(tmp);
