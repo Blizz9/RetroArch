@@ -1,0 +1,2 @@
+- Parasite needs to work without being in the main runloop
+- Fix memory leaks in parasite code in RA. Not deallocing.
