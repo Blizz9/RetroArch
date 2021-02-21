@@ -95,9 +95,9 @@ namespace ParasiteDriver
                                 // Debug.WriteLine("Clock: " + clockMessage.FrameCount);
                                 if (message.ClockCount == 1)
                                 {
-                                    string arg0 = @"D:\Development\C++\RetroArch\cores\nestopia_libretro.dll";
+                                    string arg0 = @"C:\dev\c\RetroArch\cores\nestopia_libretro.dll";
                                     // string arg0 = @"D:\Development\C++\RetroArch\cores\snes9x_libretro.dll",
-                                    string arg1 = @"D:\Development\C++\RetroArch\roms\Super Mario Bros..zip";
+                                    string arg1 = @"C:\dev\c\RetroArch\roms\smb.nes";
                                     // string arg1 = @"D:\Development\C++\RetroArch\roms\Double Dribble.zip"
                                     // string arg1 = @"D:\Development\C++\RetroArch\roms\Super Mario World.zip"
 
@@ -114,7 +114,7 @@ namespace ParasiteDriver
                                 Task.Factory.StartNew(() => GameClock?.Invoke(gameClockMessage.FrameCount, gameClockMessage.State));
 
                                 // 0x03C4
-                                Debug.WriteLine(gameClockMessage.State[0x03C4 + 0x38]);
+                                // Debug.WriteLine(gameClockMessage.State[0x03C4 + 0x38]);
 
                                 if (SaveScreen)
                                 {

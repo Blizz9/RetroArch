@@ -77,8 +77,8 @@
       {
          "name": "msys2-mingw32",
          "includePath": [
-            "C:/msys64/mingw32/include",
-            "C:/msys64/mingw32/i686-w64-mingw32/include",
+            "C:/dev/msys64/mingw32/include",
+            "C:/dev/msys64/mingw32/i686-w64-mingw32/include",
             "${workspaceRoot}/libretro-common/include",
             "${workspaceRoot}/include",
             "${workspaceRoot}"
@@ -90,8 +90,8 @@
          "intelliSenseMode": "msvc-x64",
          "browse": {
             "path": [
-               "C:/msys64/mingw32/include",
-               "C:/msys64/mingw32/i686-w64-mingw32/include",
+               "C:/dev/msys64/mingw32/include",
+               "C:/dev/msys64/mingw32/i686-w64-mingw32/include",
                "${workspaceRoot}/libretro-common/include",
                "${workspaceRoot}/include",
                "${workspaceRoot}"
@@ -103,8 +103,8 @@
       {
          "name": "msys2-mingw64",
          "includePath": [
-            "C:/msys64/mingw64/include",
-            "C:/msys64/mingw64/x86_64-w64-mingw32/include",
+            "C:/dev/msys64/mingw64/include",
+            "C:/dev/msys64/mingw64/x86_64-w64-mingw32/include",
             "${workspaceRoot}/libretro-common/include",
             "${workspaceRoot}/include",
             "${workspaceRoot}"
@@ -116,8 +116,8 @@
          "intelliSenseMode": "msvc-x64",
          "browse": {
             "path": [
-               "C:/msys64/mingw64/include",
-               "C:/msys64/mingw64/x86_64-w64-mingw32/include",
+               "C:/dev/msys64/mingw64/include",
+               "C:/dev/msys64/mingw64/x86_64-w64-mingw32/include",
                "${workspaceRoot}/libretro-common/include",
                "${workspaceRoot}/include",
                "${workspaceRoot}"
